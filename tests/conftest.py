@@ -1,6 +1,5 @@
 import os
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/testdb")
-os.environ.setdefault("APP_ENV", "test")
 
 import pytest
 from unittest.mock import AsyncMock
