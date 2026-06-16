@@ -2,13 +2,13 @@ from app.config import Settings, get_settings
 
 
 def test_settings_app_env_default():
-    s = Settings(DATABASE_URL="postgresql+asyncpg://test:test@localhost/testdb")
+    s = Settings(DATABASE_URL="postgresql+asyncpg://test:test@localhost/testdb", ANTHROPIC_API_KEY="test")
     assert s.APP_ENV == "development"
 
 
 def test_settings_accepts_database_url():
     url = "postgresql+asyncpg://user:pass@localhost/mydb"
-    s = Settings(DATABASE_URL=url)
+    s = Settings(DATABASE_URL=url, ANTHROPIC_API_KEY="test")
     assert s.DATABASE_URL == url
 
 
