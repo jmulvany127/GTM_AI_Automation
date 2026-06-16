@@ -96,3 +96,28 @@ async def test_list_leads_returns_200():
     assert len(data) == 2
     assert data[0]["email"] == "a@example.com"
     assert data[1]["email"] == "b@example.com"
+
+
+async def test_get_lead_returns_correct_lead():
+    lead = _make_lead(id=42, email="target@example.com")
+    mock = AsyncMock()
+    mock.execute = AsyncMock(return_value=_scalar_result(lead))
+
+    async with _client_with_db(mock) as client:
+        response = await client.get("/leads/42")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == 42
+    assert data["email"] == "target@example.com"
+
+
+async def test_get_lead_returns_404_for_missing():
+    mock = AsyncMock()
+    mock.execute = AsyncMock(return_value=_scalar_result(None))
+
+    async with _client_with_db(mock) as client:
+        response = await client.get("/leads/999")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Lead not found"

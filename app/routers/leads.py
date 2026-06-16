@@ -27,3 +27,12 @@ async def create_lead(payload: LeadCreate, db: AsyncSession = Depends(get_db)):
 async def list_leads(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Lead))
     return result.scalars().all()
+
+
+@router.get("/{lead_id}", response_model=LeadRead)
+async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return lead
