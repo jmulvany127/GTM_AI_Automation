@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import engine, get_db
 from app.routers.leads import router as leads_router
 from app.routers.analysis import router as analysis_router
+from app.routers.outreach import router as outreach_router
 
 
 @asynccontextmanager
@@ -19,6 +20,7 @@ app = FastAPI(title="GTM AI System", version="0.1.0", lifespan=lifespan)
 
 app.include_router(leads_router)
 app.include_router(analysis_router)
+app.include_router(outreach_router)
 
 
 @app.get("/health")
