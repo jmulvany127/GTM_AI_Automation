@@ -9,6 +9,7 @@ from app.routers.leads import router as leads_router
 from app.routers.analysis import router as analysis_router
 from app.routers.outreach import router as outreach_router
 from app.routers.workflow import router as workflow_router
+from app.routers.metrics import router as metrics_router
 
 
 @asynccontextmanager
@@ -23,6 +24,7 @@ app.include_router(leads_router)
 app.include_router(analysis_router)
 app.include_router(outreach_router)
 app.include_router(workflow_router)
+app.include_router(metrics_router)
 
 
 @app.get("/health")
