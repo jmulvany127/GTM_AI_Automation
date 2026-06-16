@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import engine, get_db
+from app.routers.leads import router as leads_router
 
 
 @asynccontextmanager
@@ -14,6 +15,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="GTM AI System", version="0.1.0", lifespan=lifespan)
+
+app.include_router(leads_router)
 
 
 @app.get("/health")
