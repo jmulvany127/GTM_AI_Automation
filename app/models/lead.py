@@ -17,7 +17,7 @@ class Lead(Base):
     company_website: Mapped[Optional[str]] = mapped_column(String(500), default=None)
     source: Mapped[Optional[str]] = mapped_column(String(100), default=None)
     notes: Mapped[Optional[str]] = mapped_column(Text, default=None)
-    status: Mapped[str] = mapped_column(String(50), server_default="new")
+    status: Mapped[str] = mapped_column(String(50), default="new", server_default="new")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -26,6 +26,5 @@ class Lead(Base):
     )
 
     def __init__(self, **kwargs):
-        if "status" not in kwargs:
-            kwargs["status"] = "new"
+        kwargs.setdefault("status", "new")
         super().__init__(**kwargs)
