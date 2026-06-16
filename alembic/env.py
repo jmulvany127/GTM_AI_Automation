@@ -6,6 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 import sys
+import os
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -18,6 +19,12 @@ config = context.config
 
 _settings = get_settings()
 _sync_url = _settings.DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
+
+# If running from host machine (not Docker), replace 'db' with 'localhost'
+# This allows alembic to run from the development machine
+if "db" in _sync_url and "localhost" not in _sync_url and "127.0.0.1" not in _sync_url:
+    _sync_url = _sync_url.replace("@db:", "@127.0.0.1:")
+
 config.set_main_option("sqlalchemy.url", _sync_url)
 
 # Interpret the config file for Python logging.
