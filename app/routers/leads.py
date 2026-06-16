@@ -21,3 +21,9 @@ async def create_lead(payload: LeadCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Email already exists")
     await db.refresh(lead)
     return lead
+
+
+@router.get("", response_model=list[LeadRead])
+async def list_leads(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Lead))
+    return result.scalars().all()

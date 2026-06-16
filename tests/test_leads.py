@@ -80,3 +80,19 @@ async def test_create_lead_returns_201():
     assert data["email"] == "john@example.com"
     assert data["status"] == "new"
     assert data["first_name"] == "John"
+
+
+async def test_list_leads_returns_200():
+    lead1 = _make_lead(id=1, email="a@example.com")
+    lead2 = _make_lead(id=2, email="b@example.com")
+    mock = AsyncMock()
+    mock.execute = AsyncMock(return_value=_scalars_all_result([lead1, lead2]))
+
+    async with _client_with_db(mock) as client:
+        response = await client.get("/leads")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert data[0]["email"] == "a@example.com"
+    assert data[1]["email"] == "b@example.com"
