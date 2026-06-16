@@ -68,7 +68,7 @@ async def plan_workflow(lead, latest_analysis=None) -> dict:
 
     user_message = (
         f"Lead Information:\n"
-        f"Name: {lead.first_name} {lead.last_name}\n"
+        f"Name: {lead.first_name or 'Unknown'} {lead.last_name or 'Unknown'}\n"
         f"Email: {lead.email} (domain: {email_domain})\n"
         f"Company: {lead.company or 'MISSING'}\n"
         f"Job Title: {lead.job_title or 'MISSING'}\n"
