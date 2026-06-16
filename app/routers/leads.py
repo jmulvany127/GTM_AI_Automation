@@ -48,7 +48,11 @@ async def update_lead(
         raise HTTPException(status_code=404, detail="Lead not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(lead, field, value)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Email already exists")
     await db.refresh(lead)
     return lead
 

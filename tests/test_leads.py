@@ -199,3 +199,18 @@ async def test_create_lead_duplicate_email_returns_409():
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Email already exists"
+
+
+async def test_patch_lead_duplicate_email_returns_409():
+    lead = _make_lead(id=1)
+    mock = AsyncMock()
+    mock.execute = AsyncMock(return_value=_scalar_result(lead))
+    mock.commit = AsyncMock(
+        side_effect=IntegrityError("UPDATE", {}, Exception("unique constraint violation"))
+    )
+
+    async with _client_with_db(mock) as client:
+        response = await client.patch("/leads/1", json={"email": "taken@example.com"})
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Email already exists"
