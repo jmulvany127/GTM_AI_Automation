@@ -91,12 +91,8 @@ async def test_analyze_lead_returns_404_for_missing_lead():
     mock = AsyncMock()
     mock.execute = AsyncMock(return_value=_scalar_result(None))
 
-    with patch(
-        "app.routers.analysis.ai_service.analyze_lead",
-        new=AsyncMock(return_value=_ANALYSIS_DICT),
-    ):
-        async with _client_with_db(mock) as client:
-            response = await client.post("/leads/999/analyze")
+    async with _client_with_db(mock) as client:
+        response = await client.post("/leads/999/analyze")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Lead not found"
