@@ -19,15 +19,6 @@ _logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/leads", tags=["workflow"])
 
-_ALLOWED_ACTIONS = {
-    "analyze_lead",
-    "generate_outreach",
-    "sync_hubspot",
-    "create_hubspot_task",
-    "mark_needs_review",
-    "skip_outreach",
-}
-
 
 async def execute_analyze_lead(lead, db: AsyncSession) -> dict:
     analysis_dict = await ai_service.analyze_lead(lead)
@@ -83,6 +74,8 @@ _DISPATCH = {
     "mark_needs_review": execute_mark_needs_review,
     "skip_outreach": execute_skip_outreach,
 }
+
+_ALLOWED_ACTIONS = set(_DISPATCH.keys())
 
 
 @router.post("/{lead_id}/run-agent", status_code=status.HTTP_200_OK)
