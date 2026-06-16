@@ -1,9 +1,17 @@
 import json
 import logging
+import re
 from anthropic import AsyncAnthropic
 from app.config import get_settings
 
 _logger = logging.getLogger(__name__)
+_CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
+
+
+def _extract_json(text: str) -> str:
+    """Strip markdown code fences if Claude wrapped its response in them."""
+    match = _CODE_FENCE_RE.search(text)
+    return match.group(1).strip() if match else text.strip()
 
 _SYSTEM_PROMPT = (
     "You are a B2B sales intelligence assistant. Analyze the lead information provided "
@@ -72,7 +80,7 @@ async def analyze_lead(lead) -> dict:
                 return {**_FALLBACK}
 
     try:
-        result = json.loads(raw_text)
+        result = json.loads(_extract_json(raw_text))
         result["raw_ai_json"] = raw_text
         return result
     except (json.JSONDecodeError, TypeError):

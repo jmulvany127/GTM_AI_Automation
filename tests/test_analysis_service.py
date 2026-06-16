@@ -115,3 +115,38 @@ async def test_confidence_score_is_float_in_range():
 
     assert isinstance(result["confidence_score"], float)
     assert 0.0 <= result["confidence_score"] <= 1.0
+
+
+async def test_analyze_lead_handles_json_in_markdown_code_fence():
+    # Claude sometimes wraps its JSON in ```json ... ``` despite being told not to.
+    # The service must strip fences before parsing — not return the fallback.
+    fenced = f"```json\n{_VALID_JSON_TEXT}\n```"
+    with patch("app.services.ai_service.AsyncAnthropic") as MockClient:
+        instance = MockClient.return_value
+        instance.messages = MagicMock()
+        instance.messages.create = AsyncMock(
+            return_value=_mock_anthropic_response(fenced)
+        )
+        result = await analyze_lead(_make_lead())
+
+    assert result["fit_score"] == 80
+    assert result["persona_type"] == "Champion"
+    assert result["confidence_score"] == 0.85
+    # raw_ai_json must preserve the original text including fences (for debugging)
+    assert result["raw_ai_json"] == fenced
+
+
+async def test_analyze_lead_handles_json_in_plain_code_fence():
+    # Same as above but without the 'json' language specifier.
+    fenced = f"```\n{_VALID_JSON_TEXT}\n```"
+    with patch("app.services.ai_service.AsyncAnthropic") as MockClient:
+        instance = MockClient.return_value
+        instance.messages = MagicMock()
+        instance.messages.create = AsyncMock(
+            return_value=_mock_anthropic_response(fenced)
+        )
+        result = await analyze_lead(_make_lead())
+
+    assert result["fit_score"] == 80
+    assert result["confidence_score"] == 0.85
+    assert result["raw_ai_json"] == fenced
