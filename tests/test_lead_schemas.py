@@ -4,9 +4,24 @@ from pydantic import ValidationError
 from app.schemas.lead import LeadCreate, LeadRead, LeadUpdate
 
 
-def test_lead_create_requires_first_name_last_name_email():
+def test_lead_create_requires_first_name():
     with pytest.raises(ValidationError):
-        LeadCreate(first_name="John")
+        LeadCreate(last_name="Doe", email="j@example.com")
+
+
+def test_lead_create_requires_last_name():
+    with pytest.raises(ValidationError):
+        LeadCreate(first_name="John", email="j@example.com")
+
+
+def test_lead_create_requires_email():
+    with pytest.raises(ValidationError):
+        LeadCreate(first_name="John", last_name="Doe")
+
+
+def test_lead_create_rejects_invalid_email():
+    with pytest.raises(ValidationError):
+        LeadCreate(first_name="John", last_name="Doe", email="not-an-email")
 
 
 def test_lead_create_optional_fields_default_to_none():
