@@ -1,0 +1,71 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+
+from app.database import get_db
+from app.models.lead import Lead
+from app.schemas.lead import LeadCreate, LeadRead, LeadUpdate
+
+router = APIRouter(prefix="/leads", tags=["leads"])
+
+
+@router.post("", response_model=LeadRead, status_code=status.HTTP_201_CREATED)
+async def create_lead(payload: LeadCreate, db: AsyncSession = Depends(get_db)):
+    lead = Lead(**payload.model_dump())
+    db.add(lead)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Email already exists")
+    await db.refresh(lead)
+    return lead
+
+
+@router.get("", response_model=list[LeadRead])
+async def list_leads(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Lead))
+    return result.scalars().all()
+
+
+@router.get("/{lead_id}", response_model=LeadRead)
+async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return lead
+
+
+@router.patch("/{lead_id}", response_model=LeadRead)
+async def update_lead(
+    lead_id: int, payload: LeadUpdate, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(lead, field, value)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Email already exists")
+    await db.refresh(lead)
+    return lead
+
+
+@router.delete("/{lead_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    await db.delete(lead)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Cannot delete lead with associated records")
