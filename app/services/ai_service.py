@@ -1,6 +1,9 @@
 import json
+import logging
 from anthropic import AsyncAnthropic
 from app.config import get_settings
+
+_logger = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = (
     "You are a B2B sales intelligence assistant. Analyze the lead information provided "
@@ -63,7 +66,8 @@ async def analyze_lead(lead) -> dict:
             )
             raw_text = response.content[0].text
             break
-        except Exception:
+        except Exception as exc:
+            _logger.warning("Anthropic API call failed (attempt %d/2): %s", attempt + 1, exc)
             if attempt == 1:
                 return {**_FALLBACK}
 
