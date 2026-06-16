@@ -183,3 +183,19 @@ async def test_delete_lead_returns_409_on_integrity_error():
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Cannot delete lead with associated records"
+
+
+async def test_create_lead_duplicate_email_returns_409():
+    mock = AsyncMock()
+    mock.commit = AsyncMock(
+        side_effect=IntegrityError("INSERT", {}, Exception("unique constraint violation"))
+    )
+
+    async with _client_with_db(mock) as client:
+        response = await client.post(
+            "/leads",
+            json={"first_name": "Jane", "last_name": "Doe", "email": "duplicate@example.com"},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Email already exists"
