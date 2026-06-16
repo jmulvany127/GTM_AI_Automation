@@ -168,3 +168,18 @@ async def test_delete_lead_returns_404_for_missing():
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Lead not found"
+
+
+async def test_delete_lead_returns_409_on_integrity_error():
+    lead = _make_lead(id=1)
+    mock = AsyncMock()
+    mock.execute = AsyncMock(return_value=_scalar_result(lead))
+    mock.commit = AsyncMock(
+        side_effect=IntegrityError("FK violation", {}, Exception("foreign key constraint"))
+    )
+
+    async with _client_with_db(mock) as client:
+        response = await client.delete("/leads/1")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Cannot delete lead with associated records"

@@ -60,4 +60,8 @@ async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     if lead is None:
         raise HTTPException(status_code=404, detail="Lead not found")
     await db.delete(lead)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Cannot delete lead with associated records")
