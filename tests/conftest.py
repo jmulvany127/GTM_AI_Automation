@@ -1,5 +1,6 @@
 import os
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/testdb")
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-key")
 
 import pytest
 from unittest.mock import AsyncMock
