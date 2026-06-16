@@ -36,3 +36,18 @@ async def get_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
     if lead is None:
         raise HTTPException(status_code=404, detail="Lead not found")
     return lead
+
+
+@router.patch("/{lead_id}", response_model=LeadRead)
+async def update_lead(
+    lead_id: int, payload: LeadUpdate, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(lead, field, value)
+    await db.commit()
+    await db.refresh(lead)
+    return lead

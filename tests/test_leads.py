@@ -121,3 +121,26 @@ async def test_get_lead_returns_404_for_missing():
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Lead not found"
+
+
+async def test_patch_lead_updates_fields():
+    lead = _make_lead(id=1, company="Old Corp")
+    mock = AsyncMock()
+    mock.execute = AsyncMock(return_value=_scalar_result(lead))
+
+    async with _client_with_db(mock) as client:
+        response = await client.patch("/leads/1", json={"company": "New Corp"})
+
+    assert response.status_code == 200
+    assert response.json()["company"] == "New Corp"
+
+
+async def test_patch_lead_returns_404_for_missing():
+    mock = AsyncMock()
+    mock.execute = AsyncMock(return_value=_scalar_result(None))
+
+    async with _client_with_db(mock) as client:
+        response = await client.patch("/leads/999", json={"company": "X"})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Lead not found"
