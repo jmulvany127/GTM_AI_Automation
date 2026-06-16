@@ -14,6 +14,7 @@ from app.schemas.analysis import LeadAnalysisCreate
 from app.schemas.outreach import OutreachCreate
 from app.services import ai_service, outreach_service
 from app.agents import gtm_workflow_agent
+from app.agents.gtm_workflow_agent import _ALLOWED_ACTIONS
 
 _logger = logging.getLogger(__name__)
 
@@ -75,8 +76,6 @@ _DISPATCH = {
     "skip_outreach": execute_skip_outreach,
 }
 
-_ALLOWED_ACTIONS = set(_DISPATCH.keys())
-
 
 @router.post("/{lead_id}/run-agent", status_code=status.HTTP_200_OK)
 async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
@@ -103,9 +102,13 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
         if action not in _ALLOWED_ACTIONS:
             continue
         executor = _DISPATCH[action]
-        result = await executor(lead, db)
-        actions_executed.append(action)
-        results[action] = result
+        try:
+            result = await executor(lead, db)
+            actions_executed.append(action)
+            results[action] = result
+        except Exception as exc:
+            _logger.error("Executor %s failed: %s", action, exc)
+            results[action] = {"status": "error", "detail": str(exc)}
 
     automated_time_seconds = time.time() - start_time
     manual_time_estimate_minutes = 25
