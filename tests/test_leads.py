@@ -56,3 +56,27 @@ async def _client_with_db(mock_session):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+async def test_create_lead_returns_201():
+    mock = AsyncMock()
+
+    async def _refresh(obj):
+        obj.id = 1
+        obj.created_at = _NOW
+        obj.updated_at = _NOW
+
+    mock.refresh = AsyncMock(side_effect=_refresh)
+
+    async with _client_with_db(mock) as client:
+        response = await client.post(
+            "/leads",
+            json={"first_name": "John", "last_name": "Doe", "email": "john@example.com"},
+        )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["id"] == 1
+    assert data["email"] == "john@example.com"
+    assert data["status"] == "new"
+    assert data["first_name"] == "John"
