@@ -8,11 +8,13 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models.lead import Lead
 from app.models.analysis import LeadAnalysis
+from app.models.crm_log import CrmSyncLog
 from app.models.outreach import OutreachMessage
 from app.models.metrics import AutomationMetrics
 from app.schemas.analysis import LeadAnalysisCreate
 from app.schemas.outreach import OutreachCreate
-from app.services import ai_service, outreach_service
+from app.services import ai_service, outreach_service, hubspot_service
+from app.config import get_settings
 from app.agents import gtm_workflow_agent
 from app.agents.gtm_workflow_agent import _ALLOWED_ACTIONS
 
@@ -48,13 +50,63 @@ async def execute_generate_outreach(lead, db: AsyncSession) -> dict:
 
 
 async def execute_sync_hubspot(lead, db: AsyncSession) -> dict:
-    _logger.info("hubspot sync skipped, not yet implemented")
-    return {"status": "skipped"}
+    analysis_result = await db.execute(
+        select(LeadAnalysis)
+        .where(LeadAnalysis.lead_id == lead.id)
+        .order_by(LeadAnalysis.created_at.desc())
+        .limit(1)
+    )
+    analysis = analysis_result.scalar_one_or_none()
+
+    outreach_result = await db.execute(
+        select(OutreachMessage)
+        .where(OutreachMessage.lead_id == lead.id)
+        .order_by(OutreachMessage.created_at.desc())
+        .limit(1)
+    )
+    outreach = outreach_result.scalar_one_or_none()
+
+    token = get_settings().HUBSPOT_ACCESS_TOKEN
+    try:
+        contact_id = await hubspot_service.create_or_update_contact(token, lead, analysis)
+        await hubspot_service.create_note(token, contact_id, analysis, outreach)
+        log = CrmSyncLog(lead_id=lead.id, sync_status="success", external_contact_id=contact_id)
+        db.add(log)
+        await db.flush()
+        return {"status": "success", "contact_id": contact_id}
+    except Exception as exc:
+        log = CrmSyncLog(lead_id=lead.id, sync_status="failed", error_message=str(exc))
+        db.add(log)
+        await db.flush()
+        return {"status": "failed", "error": str(exc)}
 
 
 async def execute_create_hubspot_task(lead, db: AsyncSession) -> dict:
-    _logger.info("create hubspot task skipped, not yet implemented")
-    return {"status": "skipped"}
+    analysis_result = await db.execute(
+        select(LeadAnalysis)
+        .where(LeadAnalysis.lead_id == lead.id)
+        .order_by(LeadAnalysis.created_at.desc())
+        .limit(1)
+    )
+    analysis = analysis_result.scalar_one_or_none()
+
+    crm_result = await db.execute(
+        select(CrmSyncLog)
+        .where(CrmSyncLog.lead_id == lead.id)
+        .order_by(CrmSyncLog.created_at.desc())
+        .limit(1)
+    )
+    crm_log = crm_result.scalar_one_or_none()
+    if crm_log is None or crm_log.external_contact_id is None:
+        return {"status": "skipped", "reason": "no contact id"}
+
+    token = get_settings().HUBSPOT_ACCESS_TOKEN
+    try:
+        recommended = analysis.recommended_action if analysis else ""
+        task_id = await hubspot_service.create_task(token, crm_log.external_contact_id, recommended or "")
+        return {"status": "success", "task_id": task_id}
+    except Exception as exc:
+        return {"status": "failed", "error": str(exc)}
 
 
 async def execute_mark_needs_review(lead, db: AsyncSession) -> dict:

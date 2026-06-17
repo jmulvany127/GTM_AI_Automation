@@ -9,6 +9,10 @@ class LeadCreate(BaseModel):
     company: str | None = None
     job_title: str | None = None
     company_website: str | None = None
+    phone: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
     source: str | None = None
     notes: str | None = None
 
@@ -23,6 +27,10 @@ class LeadRead(BaseModel):
     company: str | None
     job_title: str | None
     company_website: str | None
+    phone: str | None
+    city: str | None
+    state: str | None
+    country: str | None
     source: str | None
     notes: str | None
     status: str
@@ -37,6 +45,10 @@ class LeadUpdate(BaseModel):
     company: str | None = None
     job_title: str | None = None
     company_website: str | None = None
+    phone: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
     source: str | None = None
     notes: str | None = None
     status: str | None = None
