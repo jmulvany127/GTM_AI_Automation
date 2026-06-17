@@ -27,6 +27,9 @@ async def analyze_call(body: CallAnalysisRequest, db: AsyncSession = Depends(get
 
     analysis_dict = await call_intelligence_service.analyze_transcript(body.transcript)
 
+    title = body.title or analysis_dict.get("title")
+    description = body.description or analysis_dict.get("description")
+
     def _to_str(v) -> str | None:
         if v is None:
             return None
@@ -44,6 +47,8 @@ async def analyze_call(body: CallAnalysisRequest, db: AsyncSession = Depends(get
         recommended_follow_up=_to_str(analysis_dict.get("recommended_follow_up")),
         crm_note=_to_str(analysis_dict.get("crm_note")),
         follow_up_email=_to_str(analysis_dict.get("follow_up_email")),
+        title=_to_str(title),
+        description=_to_str(description),
     )
     db.add(record)
     await db.commit()

@@ -5,6 +5,8 @@ from pydantic import BaseModel, field_validator
 class CallAnalysisRequest(BaseModel):
     lead_id: int | None = None
     transcript: str
+    title: str | None = None
+    description: str | None = None
 
     @field_validator("transcript")
     @classmethod
@@ -28,4 +30,6 @@ class CallAnalysisResponse(BaseModel):
     recommended_follow_up: str | None = None
     crm_note: str | None = None
     follow_up_email: str | None = None
+    title: str | None = None
+    description: str | None = None
     created_at: datetime

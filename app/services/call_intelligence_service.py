@@ -9,13 +9,17 @@ _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
 
 _SYSTEM_PROMPT = (
     "you are an expert sales intelligence analyst. Read the call transcript and extract "
-    "structured intelligence. Return ONLY valid JSON with these exact keys: pain_points, "
+    "structured intelligence. Return ONLY valid JSON with these exact keys: title "
+    "(concise call name, max 60 chars, e.g. \"Discovery call with Sarah Chen — Greystar\"), "
+    "description (1-2 sentences summarising call context), pain_points, "
     "objections, competitors, budget_signals, decision_timeline, buying_intent_score "
     "(float 0.0-10.0), recommended_follow_up, crm_note, follow_up_email. Be concise. "
     "If a field has no evidence in the transcript return null."
 )
 
 _FALLBACK: dict = {
+    "title": None,
+    "description": None,
     "pain_points": None,
     "objections": None,
     "competitors": None,

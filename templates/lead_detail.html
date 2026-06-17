@@ -10,7 +10,18 @@
 
 <!-- Section 1: Lead Info -->
 <div class="card">
-  <div class="card-header">Lead Info</div>
+  <div class="card-header-row">
+    <span class="card-header-text">Lead Info</span>
+    {% if agent_run is none %}
+    <button
+      class="btn btn-primary"
+      id="run-btn-{{ lead.id }}"
+      onclick="runAgent({{ lead.id }}, this)"
+    >Run Agent</button>
+    {% else %}
+    <span class="agent-last-run">Agent last run: {{ agent_run.created_at.strftime("%Y-%m-%d %H:%M") if agent_run.created_at else "unknown" }}</span>
+    {% endif %}
+  </div>
   <div class="detail-grid">
     <span class="detail-label">Name</span>
     <span class="detail-value">{{ lead.first_name }} {{ lead.last_name }}</span>
@@ -134,4 +145,71 @@
   <p class="card-empty">Not synced yet.</p>
   {% endif %}
 </div>
+
+<!-- Section 5: Call Notes -->
+<div class="card">
+  <div class="card-header-row">
+    <span class="card-header-text">Call Notes</span>
+    <a href="/dashboard/call-notes/new?lead_id={{ lead.id }}" class="btn btn-primary">+ Add Call Note</a>
+  </div>
+  {% if call_analyses %}
+  <table class="call-notes-compact">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Intent</th>
+        <th>Date</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ca in call_analyses %}
+      <tr>
+        <td>{{ ca.title or "Call Analysis #" ~ ca.id }}</td>
+        <td>
+          {% if ca.buying_intent_score is not none %}
+            {% if ca.buying_intent_score >= 7 %}
+              <span class="intent-badge intent-badge-high">{{ "%.1f"|format(ca.buying_intent_score) }}</span>
+            {% elif ca.buying_intent_score >= 4 %}
+              <span class="intent-badge intent-badge-mid">{{ "%.1f"|format(ca.buying_intent_score) }}</span>
+            {% else %}
+              <span class="intent-badge intent-badge-low">{{ "%.1f"|format(ca.buying_intent_score) }}</span>
+            {% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>{{ ca.created_at.strftime("%Y-%m-%d") if ca.created_at else "—" }}</td>
+        <td><a href="/dashboard/call-notes/{{ ca.id }}" class="btn btn-secondary">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="card-empty">No call notes yet.</p>
+  {% endif %}
+</div>
+
+<script>
+async function runAgent(leadId, btn) {
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Running…';
+  try {
+    const res = await fetch('/leads/' + leadId + '/run-agent', { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert('Error: ' + (data.detail || res.statusText));
+      btn.disabled = false;
+      btn.textContent = original;
+      return;
+    }
+    window.location.reload();
+  } catch (err) {
+    alert('Request failed: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+</script>
 {% endblock %}

@@ -15,6 +15,8 @@ from app.database import get_db
 _NOW = datetime(2026, 6, 17, 12, 0, 0)
 
 _ANALYSIS_DICT = {
+    "title": "Test Discovery Call",
+    "description": "A test call transcript analysis.",
     "pain_points": "High customer churn",
     "objections": "Price is too high",
     "competitors": "Competitor X",
@@ -81,6 +83,8 @@ async def test_analyze_no_lead_id_returns_200_with_all_fields():
     data = response.json()
     assert data["id"] == 1
     assert data["lead_id"] is None
+    assert data["title"] == "Test Discovery Call"
+    assert data["description"] == "A test call transcript analysis."
     assert data["pain_points"] == "High customer churn"
     assert data["objections"] == "Price is too high"
     assert data["competitors"] == "Competitor X"

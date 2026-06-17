@@ -1,78 +1,129 @@
 {% extends "base.html" %}
 
-{% block title %}Call Analysis #{{ analysis.id }} — GTM AI OS{% endblock %}
+{% block title %}{{ analysis.title or "Call Analysis #" ~ analysis.id }} — GTM AI OS{% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <h1>Call Analysis #{{ analysis.id }}</h1>
-  <a href="/dashboard/leads" class="btn btn-secondary">← Back to Leads</a>
+  <h1>{{ analysis.title or "Call Analysis #" ~ analysis.id }}</h1>
+  <a href="/dashboard/call-notes" class="btn btn-secondary">← Back to Call Notes</a>
 </div>
 
-<!-- Section 1: Overview -->
+<!-- Section 1: Header Card -->
 <div class="card">
-  <div class="card-header">Overview</div>
+  <div class="card-header">Call Overview</div>
+  {% if analysis.description %}
+  <p class="call-description">{{ analysis.description }}</p>
+  {% endif %}
   <div class="detail-grid">
-    <span class="detail-label">Buying Intent Score</span>
-    <span class="detail-value" style="font-size:1.5rem;font-weight:700;">
-      {{ "%.1f"|format(analysis.buying_intent_score) if analysis.buying_intent_score is not none else "—" }} / 10
+    <span class="detail-label">Lead</span>
+    <span class="detail-value">
+      {% if lead %}
+        <a href="/dashboard/leads/{{ lead.id }}">{{ lead.first_name }} {{ lead.last_name }}</a>
+      {% else %}
+        <span class="text-muted">No lead linked</span>
+      {% endif %}
     </span>
 
+    <span class="detail-label">Date</span>
+    <span class="detail-value">{{ analysis.created_at.strftime("%Y-%m-%d %H:%M") if analysis.created_at else "—" }}</span>
+
+    <span class="detail-label">Buying Intent</span>
+    <span class="detail-value">
+      {% if analysis.buying_intent_score is not none %}
+        {% if analysis.buying_intent_score >= 7 %}
+          <span class="intent-badge intent-badge-high">{{ "%.1f"|format(analysis.buying_intent_score) }}</span>
+        {% elif analysis.buying_intent_score >= 4 %}
+          <span class="intent-badge intent-badge-mid">{{ "%.1f"|format(analysis.buying_intent_score) }}</span>
+        {% else %}
+          <span class="intent-badge intent-badge-low">{{ "%.1f"|format(analysis.buying_intent_score) }}</span>
+        {% endif %}
+      {% else %}
+        —
+      {% endif %}
+    </span>
+  </div>
+</div>
+
+<!-- Section 2: Call Intelligence Summary -->
+<div class="card">
+  <div class="card-header">Call Intelligence Summary</div>
+  <div class="detail-grid">
     <span class="detail-label">Decision Timeline</span>
     <span class="detail-value">{{ analysis.decision_timeline or "—" }}</span>
 
     <span class="detail-label">Recommended Follow-Up</span>
-    <span class="detail-value">{{ analysis.recommended_follow_up or "—" }}</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.recommended_follow_up | fmt_field }}</span>
 
-    <span class="detail-label">Analysed At</span>
-    <span class="detail-value">{{ analysis.created_at.strftime("%Y-%m-%d %H:%M") if analysis.created_at else "—" }}</span>
+    <span class="detail-label">Competitors</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.competitors | fmt_field }}</span>
   </div>
 </div>
 
-<!-- Section 2: Signals -->
+<!-- Section 3: Pain Points & Signals -->
 <div class="card">
-  <div class="card-header">Signals</div>
+  <div class="card-header">Pain Points &amp; Signals</div>
   <div class="detail-grid">
     <span class="detail-label">Pain Points</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.pain_points or "—" }}</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.pain_points | fmt_field }}</span>
 
     <span class="detail-label">Budget Signals</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.budget_signals or "—" }}</span>
-
-    <span class="detail-label">Competitors Mentioned</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.competitors or "—" }}</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.budget_signals | fmt_field }}</span>
   </div>
 </div>
 
-<!-- Section 3: Objections -->
+<!-- Section 4: Objections -->
 <div class="card">
   <div class="card-header">Objections</div>
   {% if analysis.objections %}
-  <p style="white-space:pre-wrap;margin:0;">{{ analysis.objections }}</p>
+  <p style="white-space:pre-wrap;margin:0;">{{ analysis.objections | fmt_field }}</p>
   {% else %}
   <p class="card-empty">No objections detected.</p>
   {% endif %}
 </div>
 
-<!-- Section 4: Follow Up -->
+<!-- Section 5: Follow-Up Email -->
 <div class="card">
-  <div class="card-header">Follow-Up Email</div>
+  <div class="card-header-row">
+    <span>Follow-Up Email</span>
+    <button class="btn-copy" onclick="copyText('follow-up-email-content', this)">Copy</button>
+  </div>
   {% if analysis.follow_up_email %}
-  <pre style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ analysis.follow_up_email }}</pre>
+  <pre id="follow-up-email-content" style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ analysis.follow_up_email }}</pre>
   {% else %}
   <p class="card-empty">No follow-up email generated.</p>
   {% endif %}
 </div>
 
-<!-- Section 5: CRM Note -->
+<!-- Section 6: CRM Note -->
 <div class="card">
-  <div class="card-header">CRM Note</div>
+  <div class="card-header-row">
+    <span>CRM Note</span>
+    <button class="btn-copy" onclick="copyText('crm-note-content', this)">Copy</button>
+  </div>
   {% if analysis.crm_note %}
-  <pre style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ analysis.crm_note }}</pre>
+  <pre id="crm-note-content" style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ analysis.crm_note }}</pre>
   {% if analysis.lead_id %}
-  <p style="margin-top:0.75rem;font-size:0.85rem;color:#6b7280;">Auto-synced to HubSpot if contact exists.</p>
+  <p class="form-help" style="margin-top:0.75rem;">Auto-synced to HubSpot if contact exists.</p>
   {% endif %}
   {% else %}
   <p class="card-empty">No CRM note generated.</p>
   {% endif %}
 </div>
+
+<script>
+function copyText(elementId, btn) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  }).catch(() => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+  });
+}
+</script>
 {% endblock %}

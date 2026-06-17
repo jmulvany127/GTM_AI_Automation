@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Text, DateTime, Integer, Float, ForeignKey
+from sqlalchemy import Text, DateTime, Integer, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -19,4 +19,6 @@ class CallAnalysis(Base):
     recommended_follow_up: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     crm_note: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     follow_up_email: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    title: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

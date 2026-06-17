@@ -283,3 +283,203 @@ tbody td {
 .page-header h1 {
   margin-bottom: 0;
 }
+
+/* Form elements */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.35rem;
+}
+
+.form-group input[type="text"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 5px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  color: #2d3748;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+.form-optional {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #a0aec0;
+  margin-left: 0.25rem;
+}
+
+.form-required {
+  color: #e53e3e;
+  margin-left: 0.15rem;
+}
+
+.form-help {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-top: 0.3rem;
+}
+
+.form-error {
+  font-size: 0.85rem;
+  color: #e53e3e;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 5px;
+  padding: 0.6rem 0.85rem;
+  margin-top: 1rem;
+}
+
+/* ── Card header row (title + inline button) ─────────────────────────── */
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.card-header-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+/* ── Filter bar ──────────────────────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  padding: 0.85rem 1rem;
+}
+
+.filter-bar input[type="text"],
+.filter-bar input[type="date"],
+.filter-bar select {
+  height: 34px;
+  padding: 0 0.6rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 5px;
+  font-size: 0.84rem;
+  color: #2d3748;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.filter-bar input[type="text"] {
+  min-width: 220px;
+}
+
+.filter-bar input:focus,
+.filter-bar select:focus {
+  border-color: #3b82f6;
+}
+
+/* ── Intent score badges ─────────────────────────────────────────────── */
+.intent-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.intent-badge-high {
+  background-color: #c6f6d5;
+  color: #276749;
+}
+
+.intent-badge-mid {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.intent-badge-low {
+  background-color: #fed7d7;
+  color: #c53030;
+}
+
+/* ── Copy-to-clipboard button ────────────────────────────────────────── */
+.btn-copy {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 5px;
+  border: 1px solid #cbd5e0;
+  background: #f7fafc;
+  color: #4a5568;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-copy:hover {
+  background: #e2e8f0;
+  border-color: #a0aec0;
+}
+
+/* ── Compact call notes table (lead detail page) ─────────────────────── */
+.call-notes-compact {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+}
+
+.call-notes-compact th {
+  background-color: #f7fafc;
+  color: #4a5568;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.call-notes-compact td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+
+/* ── Call description (detail page) ─────────────────────────────────── */
+.call-description {
+  color: #4a5568;
+  font-size: 0.92rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+/* ── Agent last run status (lead detail page) ────────────────────────── */
+.agent-last-run {
+  font-size: 0.82rem;
+  color: #718096;
+  font-style: italic;
+}

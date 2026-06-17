@@ -107,6 +107,7 @@ async def create_note(token: str, contact_id: str, analysis, outreach) -> str:
         "associations": [
             {
                 "to": {"id": contact_id},
+                # 202 = Note → Contact association type (HubSpot v3 API standard definition)
                 "types": [{"associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 202}],
             }
         ],
@@ -130,6 +131,7 @@ async def create_call_note(token: str, contact_id: str, note_body: str) -> str:
         "associations": [
             {
                 "to": {"id": contact_id},
+                # 202 = Note → Contact association type (HubSpot v3 API standard definition)
                 "types": [{"associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 202}],
             }
         ],
