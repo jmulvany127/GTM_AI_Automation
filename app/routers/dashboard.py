@@ -109,11 +109,17 @@ async def dashboard_call_notes_list(request: Request, db: AsyncSession = Depends
     result = await db.execute(select(CallAnalysis).order_by(desc(CallAnalysis.created_at)))
     analyses = result.scalars().all()
 
+    # Batch-fetch all referenced leads in one query
+    lead_ids = {a.lead_id for a in analyses if a.lead_id is not None}
+    leads_by_id: dict[int, Lead] = {}
+    if lead_ids:
+        leads_result = await db.execute(select(Lead).where(Lead.id.in_(lead_ids)))
+        for lead in leads_result.scalars().all():
+            leads_by_id[lead.id] = lead
+
     rows = []
     for analysis in analyses:
-        lead = None
-        if analysis.lead_id is not None:
-            lead = await db.get(Lead, analysis.lead_id)
+        lead = leads_by_id.get(analysis.lead_id) if analysis.lead_id else None
         rows.append({"analysis": analysis, "lead": lead})
 
     linked_lead_ids_result = await db.execute(

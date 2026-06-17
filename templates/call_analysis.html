@@ -85,7 +85,7 @@
 <div class="card">
   <div class="card-header-row">
     <span>Follow-Up Email</span>
-    <button class="btn-copy" onclick="copyText('follow-up-email-content')">Copy</button>
+    <button class="btn-copy" onclick="copyText('follow-up-email-content', this)">Copy</button>
   </div>
   {% if analysis.follow_up_email %}
   <pre id="follow-up-email-content" style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ analysis.follow_up_email }}</pre>
@@ -98,7 +98,7 @@
 <div class="card">
   <div class="card-header-row">
     <span>CRM Note</span>
-    <button class="btn-copy" onclick="copyText('crm-note-content')">Copy</button>
+    <button class="btn-copy" onclick="copyText('crm-note-content', this)">Copy</button>
   </div>
   {% if analysis.crm_note %}
   <pre id="crm-note-content" style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ analysis.crm_note }}</pre>
@@ -111,11 +111,10 @@
 </div>
 
 <script>
-function copyText(elementId) {
+function copyText(elementId, btn) {
   const el = document.getElementById(elementId);
   if (!el) return;
   navigator.clipboard.writeText(el.textContent).then(() => {
-    const btn = event.currentTarget;
     const orig = btn.textContent;
     btn.textContent = 'Copied!';
     setTimeout(() => { btn.textContent = orig; }, 1500);
