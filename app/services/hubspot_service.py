@@ -15,6 +15,18 @@ def _raise_for_status(response: httpx.Response) -> None:
         )
 
 
+_STATUS_MAP = {
+    "new": "NEW",
+    "analyzed": "OPEN",
+    "needs_review": "OPEN",
+    "skipped": "UNQUALIFIED",
+}
+
+
+def _hs_lead_status(internal_status: str) -> str:
+    return _STATUS_MAP.get(internal_status, "OPEN")
+
+
 async def search_contact_by_email(token: str, email: str) -> str | None:
     payload = {
         "filterGroups": [
@@ -36,7 +48,7 @@ async def search_contact_by_email(token: str, email: str) -> str | None:
     return results[0]["id"] if results else None
 
 
-async def create_or_update_contact(token: str, lead, analysis) -> str:
+async def create_or_update_contact(token: str, lead) -> str:
     properties = {
         "firstname": lead.first_name,
         "lastname": lead.last_name,
@@ -44,10 +56,7 @@ async def create_or_update_contact(token: str, lead, analysis) -> str:
         "company": lead.company,
         "jobtitle": lead.job_title,
         "website": lead.company_website,
-        "hs_lead_status": lead.status,
-        "ai_fit_score": str(analysis.fit_score) if analysis.fit_score is not None else "",
-        "ai_overall_score": str(analysis.overall_score) if analysis.overall_score is not None else "",
-        "ai_recommended_action": analysis.recommended_action or "",
+        "hs_lead_status": _hs_lead_status(lead.status),
     }
     existing_id = await search_contact_by_email(token, lead.email)
 

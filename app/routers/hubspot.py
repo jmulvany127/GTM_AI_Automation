@@ -42,7 +42,7 @@ async def sync_hubspot(lead_id: int, db: AsyncSession = Depends(get_db)):
     token = get_settings().HUBSPOT_ACCESS_TOKEN
 
     try:
-        contact_id = await hubspot_service.create_or_update_contact(token, lead, analysis)
+        contact_id = await hubspot_service.create_or_update_contact(token, lead)
         await hubspot_service.create_note(token, contact_id, analysis, outreach)
         if analysis.overall_score is not None and analysis.overall_score >= 85:
             await hubspot_service.create_task(token, contact_id, analysis.recommended_action or "")

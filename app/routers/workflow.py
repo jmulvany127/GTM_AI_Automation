@@ -68,7 +68,7 @@ async def execute_sync_hubspot(lead, db: AsyncSession) -> dict:
 
     token = get_settings().HUBSPOT_ACCESS_TOKEN
     try:
-        contact_id = await hubspot_service.create_or_update_contact(token, lead, analysis)
+        contact_id = await hubspot_service.create_or_update_contact(token, lead)
         await hubspot_service.create_note(token, contact_id, analysis, outreach)
         log = CrmSyncLog(lead_id=lead.id, sync_status="success", external_contact_id=contact_id)
         db.add(log)
