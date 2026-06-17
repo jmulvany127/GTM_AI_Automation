@@ -13,6 +13,7 @@
       <tr>
         <th>Name</th>
         <th>Company</th>
+        <th>Email</th>
         <th>Title</th>
         <th>Phone</th>
         <th>Location</th>
@@ -30,6 +31,13 @@
           </a>
         </td>
         <td>{{ item.lead.company or "—" }}</td>
+        <td>
+          {% if item.lead.email %}
+          <a href="mailto:{{ item.lead.email }}">{{ item.lead.email }}</a>
+          {% else %}
+          —
+          {% endif %}
+        </td>
         <td>{{ item.lead.job_title or "—" }}</td>
         <td>{{ item.lead.phone or "—" }}</td>
         <td>
@@ -52,7 +60,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="8" style="text-align:center; color:#a0aec0; padding:2rem;">
+        <td colspan="9" style="text-align:center; color:#a0aec0; padding:2rem;">
           No leads found. Add one via the API.
         </td>
       </tr>
