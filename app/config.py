@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     APP_ENV: str = "development"
     ANTHROPIC_API_KEY: str
+    HUBSPOT_ACCESS_TOKEN: str = ""
 
 
 @lru_cache
