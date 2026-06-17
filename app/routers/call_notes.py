@@ -1,3 +1,4 @@
+import json
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,18 +27,23 @@ async def analyze_call(body: CallAnalysisRequest, db: AsyncSession = Depends(get
 
     analysis_dict = await call_intelligence_service.analyze_transcript(body.transcript)
 
+    def _to_str(v) -> str | None:
+        if v is None:
+            return None
+        return v if isinstance(v, str) else json.dumps(v)
+
     record = CallAnalysis(
         lead_id=body.lead_id,
         transcript=body.transcript,
-        pain_points=analysis_dict.get("pain_points"),
-        objections=analysis_dict.get("objections"),
-        competitors=analysis_dict.get("competitors"),
-        budget_signals=analysis_dict.get("budget_signals"),
-        decision_timeline=analysis_dict.get("decision_timeline"),
+        pain_points=_to_str(analysis_dict.get("pain_points")),
+        objections=_to_str(analysis_dict.get("objections")),
+        competitors=_to_str(analysis_dict.get("competitors")),
+        budget_signals=_to_str(analysis_dict.get("budget_signals")),
+        decision_timeline=_to_str(analysis_dict.get("decision_timeline")),
         buying_intent_score=analysis_dict.get("buying_intent_score"),
-        recommended_follow_up=analysis_dict.get("recommended_follow_up"),
-        crm_note=analysis_dict.get("crm_note"),
-        follow_up_email=analysis_dict.get("follow_up_email"),
+        recommended_follow_up=_to_str(analysis_dict.get("recommended_follow_up")),
+        crm_note=_to_str(analysis_dict.get("crm_note")),
+        follow_up_email=_to_str(analysis_dict.get("follow_up_email")),
     )
     db.add(record)
     await db.commit()
