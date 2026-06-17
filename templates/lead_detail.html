@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lead.first_name }} {{ lead.last_name }} — GTM AI OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ lead.first_name }} {{ lead.last_name }}</h1>
+  <a href="/dashboard/leads" class="btn btn-secondary">← Back to Leads</a>
+</div>
+
+<!-- Section 1: Lead Info -->
+<div class="card">
+  <div class="card-header">Lead Info</div>
+  <div class="detail-grid">
+    <span class="detail-label">Name</span>
+    <span class="detail-value">{{ lead.first_name }} {{ lead.last_name }}</span>
+
+    <span class="detail-label">Email</span>
+    <span class="detail-value">{{ lead.email }}</span>
+
+    <span class="detail-label">Company</span>
+    <span class="detail-value">{{ lead.company or "—" }}</span>
+
+    <span class="detail-label">Title</span>
+    <span class="detail-value">{{ lead.job_title or "—" }}</span>
+
+    <span class="detail-label">Phone</span>
+    <span class="detail-value">{{ lead.phone or "—" }}</span>
+
+    <span class="detail-label">City</span>
+    <span class="detail-value">{{ lead.city or "—" }}</span>
+
+    <span class="detail-label">State</span>
+    <span class="detail-value">{{ lead.state or "—" }}</span>
+
+    <span class="detail-label">Country</span>
+    <span class="detail-value">{{ lead.country or "—" }}</span>
+
+    <span class="detail-label">Industry</span>
+    <span class="detail-value">{{ lead.source or "—" }}</span>
+
+    <span class="detail-label">Status</span>
+    <span class="detail-value">
+      <span class="badge badge-{{ lead.status }}">{{ lead.status }}</span>
+    </span>
+
+    <span class="detail-label">Created</span>
+    <span class="detail-value">{{ lead.created_at.strftime("%Y-%m-%d %H:%M") if lead.created_at else "—" }}</span>
+  </div>
+</div>
+
+<!-- Section 2: AI Analysis -->
+<div class="card">
+  <div class="card-header">AI Analysis</div>
+  {% if analysis %}
+  <div class="detail-grid">
+    <span class="detail-label">Persona Type</span>
+    <span class="detail-value">{{ analysis.persona_type or "—" }}</span>
+
+    <span class="detail-label">Fit Score</span>
+    <span class="detail-value">{{ analysis.fit_score if analysis.fit_score is not none else "—" }}</span>
+
+    <span class="detail-label">Urgency Score</span>
+    <span class="detail-value">{{ analysis.urgency_score if analysis.urgency_score is not none else "—" }}</span>
+
+    <span class="detail-label">Overall Score</span>
+    <span class="detail-value">{{ analysis.overall_score if analysis.overall_score is not none else "—" }}</span>
+
+    <span class="detail-label">Recommended Action</span>
+    <span class="detail-value">{{ analysis.recommended_action or "—" }}</span>
+
+    <span class="detail-label">Pain Points</span>
+    <span class="detail-value">{{ analysis.pain_points or "—" }}</span>
+
+    <span class="detail-label">Buying Signals</span>
+    <span class="detail-value">{{ analysis.buying_signals or "—" }}</span>
+
+    <span class="detail-label">Objections</span>
+    <span class="detail-value">{{ analysis.objections or "—" }}</span>
+
+    <span class="detail-label">Confidence Score</span>
+    <span class="detail-value">{{ "%.2f"|format(analysis.confidence_score) if analysis.confidence_score is not none else "—" }}</span>
+  </div>
+  {% else %}
+  <p class="card-empty">No analysis yet.</p>
+  {% endif %}
+</div>
+
+<!-- Section 3: Outreach -->
+<div class="card">
+  <div class="card-header">Outreach</div>
+  {% if outreach %}
+  <div class="detail-grid">
+    <span class="detail-label">Subject</span>
+    <span class="detail-value">{{ outreach.subject or "—" }}</span>
+
+    <span class="detail-label">Email Body</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.email_body or "—" }}</span>
+
+    <span class="detail-label">Follow-up Email</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.follow_up_email or "—" }}</span>
+
+    <span class="detail-label">LinkedIn Message</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.linkedin_message or "—" }}</span>
+
+    <span class="detail-label">Call Notes</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.call_notes or "—" }}</span>
+  </div>
+  {% else %}
+  <p class="card-empty">No outreach generated yet.</p>
+  {% endif %}
+</div>
+
+<!-- Section 4: HubSpot Sync -->
+<div class="card">
+  <div class="card-header">HubSpot Sync</div>
+  {% if crm_sync %}
+  <div class="detail-grid">
+    <span class="detail-label">Sync Status</span>
+    <span class="detail-value">{{ crm_sync.sync_status }}</span>
+
+    <span class="detail-label">HubSpot Contact ID</span>
+    <span class="detail-value">{{ crm_sync.external_contact_id or "—" }}</span>
+
+    <span class="detail-label">Synced At</span>
+    <span class="detail-value">{{ crm_sync.created_at.strftime("%Y-%m-%d %H:%M") if crm_sync.created_at else "—" }}</span>
+
+    {% if crm_sync.error_message %}
+    <span class="detail-label">Error</span>
+    <span class="detail-value" style="color:#c53030;">{{ crm_sync.error_message }}</span>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="card-empty">Not synced yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
