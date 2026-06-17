@@ -134,4 +134,54 @@
   <p class="card-empty">Not synced yet.</p>
   {% endif %}
 </div>
+
+<!-- Section 5: Call Notes -->
+<div class="card">
+  <div class="card-header-row">
+    <span class="card-header-text">Call Notes</span>
+    <a href="/dashboard/call-notes/new?lead_id={{ lead.id }}" class="btn btn-primary">+ Add Call Note</a>
+  </div>
+  {% if call_analyses %}
+  <table class="call-notes-compact">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Intent</th>
+        <th>Date</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ca in call_analyses %}
+      <tr>
+        <td>{{ ca.title or "Call Analysis #" ~ ca.id }}</td>
+        <td>
+          {% if ca.buying_intent_score is not none %}
+            {% if ca.buying_intent_score >= 7 %}
+              <span class="intent-badge intent-badge-high">{{ "%.1f"|format(ca.buying_intent_score) }}</span>
+            {% elif ca.buying_intent_score >= 4 %}
+              <span class="intent-badge intent-badge-mid">{{ "%.1f"|format(ca.buying_intent_score) }}</span>
+            {% else %}
+              <span class="intent-badge intent-badge-low">{{ "%.1f"|format(ca.buying_intent_score) }}</span>
+            {% endif %}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>{{ ca.created_at.strftime("%Y-%m-%d") if ca.created_at else "—" }}</td>
+        <td><a href="/dashboard/call-notes/{{ ca.id }}" class="btn btn-secondary">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div style="margin-top:1rem;">
+    <a href="/dashboard/call-notes/new?lead_id={{ lead.id }}" class="btn btn-primary">+ Add Call Note</a>
+  </div>
+  {% else %}
+  <p class="card-empty">No call notes yet.</p>
+  <div style="margin-top:0.75rem;">
+    <a href="/dashboard/call-notes/new?lead_id={{ lead.id }}" class="btn btn-primary">+ Add Call Note</a>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

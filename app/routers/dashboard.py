@@ -68,6 +68,13 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
     )
     crm_sync = crm_result.scalar_one_or_none()
 
+    call_analyses_result = await db.execute(
+        select(CallAnalysis)
+        .where(CallAnalysis.lead_id == lead_id)
+        .order_by(desc(CallAnalysis.created_at))
+    )
+    call_analyses = call_analyses_result.scalars().all()
+
     return templates.TemplateResponse(
         request,
         "lead_detail.html",
@@ -76,6 +83,7 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
             "analysis": analysis,
             "outreach": outreach,
             "crm_sync": crm_sync,
+            "call_analyses": call_analyses,
         },
     )
 
