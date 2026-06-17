@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Leads — GTM AI OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Leads</h1>
+</div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Company</th>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Score</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in leads %}
+      <tr>
+        <td>
+          <a href="/dashboard/leads/{{ item.lead.id }}">
+            {{ item.lead.first_name }} {{ item.lead.last_name }}
+          </a>
+        </td>
+        <td>{{ item.lead.company or "—" }}</td>
+        <td>{{ item.lead.job_title or "—" }}</td>
+        <td>
+          <span class="badge badge-{{ item.lead.status }}">{{ item.lead.status }}</span>
+        </td>
+        <td>{{ item.overall_score if item.overall_score is not none else "—" }}</td>
+        <td>
+          <button
+            class="btn btn-primary"
+            id="run-btn-{{ item.lead.id }}"
+            onclick="runAgent({{ item.lead.id }}, this)"
+          >
+            Run Agent
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" style="text-align:center; color:#a0aec0; padding:2rem;">
+          No leads found. Add one via the API.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+async function runAgent(leadId, btn) {
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Running…';
+  try {
+    const res = await fetch('/leads/' + leadId + '/run-agent', { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert('Error: ' + (data.detail || res.statusText));
+      btn.disabled = false;
+      btn.textContent = original;
+      return;
+    }
+    window.location.reload();
+  } catch (err) {
+    alert('Request failed: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+</script>
+{% endblock %}
