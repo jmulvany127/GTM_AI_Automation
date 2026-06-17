@@ -9,6 +9,7 @@ from app.models.analysis import LeadAnalysis
 from app.models.call_analysis import CallAnalysis
 from app.models.crm_log import CrmSyncLog
 from app.models.lead import Lead
+from app.models.metrics import AutomationMetrics
 from app.models.outreach import OutreachMessage
 from app.services import metrics_service
 
@@ -75,6 +76,14 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
     )
     call_analyses = call_analyses_result.scalars().all()
 
+    agent_run_result = await db.execute(
+        select(AutomationMetrics)
+        .where(AutomationMetrics.lead_id == lead_id)
+        .order_by(desc(AutomationMetrics.created_at))
+        .limit(1)
+    )
+    agent_run = agent_run_result.scalar_one_or_none()
+
     return templates.TemplateResponse(
         request,
         "lead_detail.html",
@@ -84,6 +93,7 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
             "outreach": outreach,
             "crm_sync": crm_sync,
             "call_analyses": call_analyses,
+            "agent_run": agent_run,
         },
     )
 

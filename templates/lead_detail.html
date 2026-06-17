@@ -10,7 +10,18 @@
 
 <!-- Section 1: Lead Info -->
 <div class="card">
-  <div class="card-header">Lead Info</div>
+  <div class="card-header-row">
+    <span class="card-header-text">Lead Info</span>
+    {% if agent_run is none %}
+    <button
+      class="btn btn-primary"
+      id="run-btn-{{ lead.id }}"
+      onclick="runAgent({{ lead.id }}, this)"
+    >Run Agent</button>
+    {% else %}
+    <span class="agent-last-run">Agent last run: {{ agent_run.created_at.strftime("%Y-%m-%d %H:%M") if agent_run.created_at else "unknown" }}</span>
+    {% endif %}
+  </div>
   <div class="detail-grid">
     <span class="detail-label">Name</span>
     <span class="detail-value">{{ lead.first_name }} {{ lead.last_name }}</span>
@@ -184,4 +195,27 @@
   </div>
   {% endif %}
 </div>
+
+<script>
+async function runAgent(leadId, btn) {
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Running…';
+  try {
+    const res = await fetch('/leads/' + leadId + '/run-agent', { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert('Error: ' + (data.detail || res.statusText));
+      btn.disabled = false;
+      btn.textContent = original;
+      return;
+    }
+    window.location.reload();
+  } catch (err) {
+    alert('Request failed: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+</script>
 {% endblock %}
