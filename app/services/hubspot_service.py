@@ -121,6 +121,29 @@ async def create_note(token: str, contact_id: str, analysis, outreach) -> str:
     return response.json()["id"]
 
 
+async def create_call_note(token: str, contact_id: str, note_body: str) -> str:
+    payload = {
+        "properties": {
+            "hs_note_body": note_body,
+            "hs_timestamp": str(int(time.time() * 1000)),
+        },
+        "associations": [
+            {
+                "to": {"id": contact_id},
+                "types": [{"associationCategory": "HUBSPOT_DEFINED", "associationTypeId": 202}],
+            }
+        ],
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{_BASE}/crm/v3/objects/notes",
+            headers=_headers(token),
+            json=payload,
+        )
+    _raise_for_status(response)
+    return response.json()["id"]
+
+
 async def create_task(token: str, contact_id: str, recommended_action: str) -> str:
     due_ms = int((time.time() + 3 * 86400) * 1000)
     payload = {
