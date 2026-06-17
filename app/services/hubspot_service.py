@@ -96,7 +96,10 @@ async def create_note(token: str, contact_id: str, analysis, outreach) -> str:
     body = "\n".join(lines)
 
     payload = {
-        "properties": {"hs_note_body": body},
+        "properties": {
+            "hs_note_body": body,
+            "hs_timestamp": str(int(time.time() * 1000)),
+        },
         "associations": [
             {
                 "to": {"id": contact_id},
