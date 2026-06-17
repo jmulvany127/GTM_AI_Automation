@@ -52,10 +52,10 @@
     <span class="detail-value">{{ analysis.decision_timeline or "—" }}</span>
 
     <span class="detail-label">Recommended Follow-Up</span>
-    <span class="detail-value">{{ analysis.recommended_follow_up or "—" }}</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.recommended_follow_up | fmt_field }}</span>
 
     <span class="detail-label">Competitors</span>
-    <span class="detail-value">{{ analysis.competitors or "—" }}</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.competitors | fmt_field }}</span>
   </div>
 </div>
 
@@ -64,10 +64,10 @@
   <div class="card-header">Pain Points &amp; Signals</div>
   <div class="detail-grid">
     <span class="detail-label">Pain Points</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.pain_points or "—" }}</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.pain_points | fmt_field }}</span>
 
     <span class="detail-label">Budget Signals</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.budget_signals or "—" }}</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.budget_signals | fmt_field }}</span>
   </div>
 </div>
 
@@ -75,7 +75,7 @@
 <div class="card">
   <div class="card-header">Objections</div>
   {% if analysis.objections %}
-  <p style="white-space:pre-wrap;margin:0;">{{ analysis.objections }}</p>
+  <p style="white-space:pre-wrap;margin:0;">{{ analysis.objections | fmt_field }}</p>
   {% else %}
   <p class="card-empty">No objections detected.</p>
   {% endif %}

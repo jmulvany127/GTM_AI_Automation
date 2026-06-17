@@ -185,14 +185,8 @@
       {% endfor %}
     </tbody>
   </table>
-  <div style="margin-top:1rem;">
-    <a href="/dashboard/call-notes/new?lead_id={{ lead.id }}" class="btn btn-primary">+ Add Call Note</a>
-  </div>
   {% else %}
   <p class="card-empty">No call notes yet.</p>
-  <div style="margin-top:0.75rem;">
-    <a href="/dashboard/call-notes/new?lead_id={{ lead.id }}" class="btn btn-primary">+ Add Call Note</a>
-  </div>
   {% endif %}
 </div>
 

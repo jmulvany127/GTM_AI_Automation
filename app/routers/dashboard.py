@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -15,6 +17,32 @@ from app.services import metrics_service
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 templates = Jinja2Templates(directory="templates")
+
+
+def _fmt_field(value: str | None) -> str:
+    """Render a stored field value for display.
+
+    Fields are stored as either plain strings or JSON-encoded arrays/objects.
+    Arrays are rendered as a bullet list; objects as "Key: value" lines.
+    """
+    if not value:
+        return "—"
+    try:
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        return value
+    if isinstance(parsed, list):
+        return "\n".join(f"• {item}" for item in parsed) if parsed else "—"
+    if isinstance(parsed, dict):
+        lines = []
+        for k, v in parsed.items():
+            label = k.replace("_", " ").title()
+            lines.append(f"{label}: {v}")
+        return "\n".join(lines) if lines else "—"
+    return str(parsed)
+
+
+templates.env.filters["fmt_field"] = _fmt_field
 
 
 @router.get("/leads", response_class=HTMLResponse)
