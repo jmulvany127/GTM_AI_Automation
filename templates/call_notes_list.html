@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Call Notes — GTM AI OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Call Notes</h1>
+  <a href="/docs#/call-intelligence/analyze_call_call_notes_analyze_post" target="_blank" class="btn btn-primary">
+    + Analyze New Call
+  </a>
+</div>
+
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Lead</th>
+        <th>Intent Score</th>
+        <th>Decision Timeline</th>
+        <th>Top Pain Point</th>
+        <th>Analysed</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in analyses %}
+      <tr>
+        <td>{{ item.analysis.id }}</td>
+        <td>
+          {% if item.lead %}
+            <a href="/dashboard/leads/{{ item.lead.id }}">{{ item.lead.first_name }} {{ item.lead.last_name }}</a>
+          {% else %}
+            <span style="color:#a0aec0;">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if item.analysis.buying_intent_score is not none %}
+            <span style="font-weight:600;">{{ "%.1f"|format(item.analysis.buying_intent_score) }}</span> / 10
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>{{ item.analysis.decision_timeline or "—" }}</td>
+        <td style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+          {{ item.analysis.pain_points or "—" }}
+        </td>
+        <td>{{ item.analysis.created_at.strftime("%Y-%m-%d %H:%M") if item.analysis.created_at else "—" }}</td>
+        <td>
+          <a href="/dashboard/call-notes/{{ item.analysis.id }}" class="btn btn-secondary">View</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" style="text-align:center; color:#a0aec0; padding:2rem;">
+          No call analyses yet. Submit a transcript via the API or click &ldquo;Analyze New Call&rdquo; above.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
