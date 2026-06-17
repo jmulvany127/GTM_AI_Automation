@@ -3,5 +3,6 @@ from app.models.analysis import LeadAnalysis
 from app.models.outreach import OutreachMessage
 from app.models.metrics import AutomationMetrics
 from app.models.crm_log import CrmSyncLog
+from app.models.call_analysis import CallAnalysis
 
-__all__ = ["Lead", "LeadAnalysis", "OutreachMessage", "AutomationMetrics", "CrmSyncLog"]
+__all__ = ["Lead", "LeadAnalysis", "OutreachMessage", "AutomationMetrics", "CrmSyncLog", "CallAnalysis"]
