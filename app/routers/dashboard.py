@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -98,7 +98,20 @@ async def dashboard_call_notes_list(request: Request, db: AsyncSession = Depends
             lead = await db.get(Lead, analysis.lead_id)
         rows.append({"analysis": analysis, "lead": lead})
 
-    return templates.TemplateResponse(request, "call_notes_list.html", {"analyses": rows})
+    linked_lead_ids_result = await db.execute(
+        select(distinct(CallAnalysis.lead_id)).where(CallAnalysis.lead_id != None)
+    )
+    linked_lead_ids = linked_lead_ids_result.scalars().all()
+    all_leads_result = await db.execute(
+        select(Lead).where(Lead.id.in_(linked_lead_ids)).order_by(Lead.first_name)
+    )
+    all_leads = all_leads_result.scalars().all()
+
+    return templates.TemplateResponse(
+        request,
+        "call_notes_list.html",
+        {"analyses": rows, "all_leads": all_leads},
+    )
 
 
 @router.get("/call-notes/{analysis_id}", response_class=HTMLResponse)
