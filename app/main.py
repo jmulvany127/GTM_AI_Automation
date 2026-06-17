@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from app.routers.outreach import router as outreach_router
 from app.routers.workflow import router as workflow_router
 from app.routers.hubspot import router as hubspot_router
 from app.routers.metrics import router as metrics_router
+from app.routers.dashboard import router as dashboard_router
 
 
 @asynccontextmanager
@@ -21,12 +23,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="GTM AI System", version="0.1.0", lifespan=lifespan)
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 app.include_router(leads_router)
 app.include_router(analysis_router)
 app.include_router(outreach_router)
 app.include_router(workflow_router)
 app.include_router(hubspot_router)
 app.include_router(metrics_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health")
