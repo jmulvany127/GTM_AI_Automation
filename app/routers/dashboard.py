@@ -34,7 +34,7 @@ async def dashboard_leads(request: Request, db: AsyncSession = Depends(get_db)):
             "overall_score": analysis.overall_score if analysis else None,
         })
 
-    return templates.TemplateResponse("leads.html", {"request": request, "leads": lead_rows})
+    return templates.TemplateResponse(request, "leads.html", {"leads": lead_rows})
 
 
 @router.get("/leads/{lead_id}", response_class=HTMLResponse)
@@ -68,9 +68,9 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
     crm_sync = crm_result.scalar_one_or_none()
 
     return templates.TemplateResponse(
+        request,
         "lead_detail.html",
         {
-            "request": request,
             "lead": lead,
             "analysis": analysis,
             "outreach": outreach,
@@ -82,4 +82,4 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
 @router.get("/metrics", response_class=HTMLResponse)
 async def dashboard_metrics(request: Request, db: AsyncSession = Depends(get_db)):
     metrics = await metrics_service.get_roi_metrics(db)
-    return templates.TemplateResponse("metrics.html", {"request": request, "metrics": metrics})
+    return templates.TemplateResponse(request, "metrics.html", {"metrics": metrics})
