@@ -10,6 +10,8 @@ COPY alembic/ ./alembic/
 COPY alembic.ini .
 COPY templates/ ./templates/
 COPY static/ ./static/
+COPY tests/ ./tests/
+COPY pytest.ini .
 
 EXPOSE 8000
 

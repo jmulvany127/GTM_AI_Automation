@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Call Analysis #{{ analysis.id }} — GTM AI OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Call Analysis #{{ analysis.id }}</h1>
+  <a href="/dashboard/leads" class="btn btn-secondary">← Back to Leads</a>
+</div>
+
+<!-- Section 1: Overview -->
+<div class="card">
+  <div class="card-header">Overview</div>
+  <div class="detail-grid">
+    <span class="detail-label">Buying Intent Score</span>
+    <span class="detail-value" style="font-size:1.5rem;font-weight:700;">
+      {{ "%.1f"|format(analysis.buying_intent_score) if analysis.buying_intent_score is not none else "—" }} / 10
+    </span>
+
+    <span class="detail-label">Decision Timeline</span>
+    <span class="detail-value">{{ analysis.decision_timeline or "—" }}</span>
+
+    <span class="detail-label">Recommended Follow-Up</span>
+    <span class="detail-value">{{ analysis.recommended_follow_up or "—" }}</span>
+
+    <span class="detail-label">Analysed At</span>
+    <span class="detail-value">{{ analysis.created_at.strftime("%Y-%m-%d %H:%M") if analysis.created_at else "—" }}</span>
+  </div>
+</div>
+
+<!-- Section 2: Signals -->
+<div class="card">
+  <div class="card-header">Signals</div>
+  <div class="detail-grid">
+    <span class="detail-label">Pain Points</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.pain_points or "—" }}</span>
+
+    <span class="detail-label">Budget Signals</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.budget_signals or "—" }}</span>
+
+    <span class="detail-label">Competitors Mentioned</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ analysis.competitors or "—" }}</span>
+  </div>
+</div>
+
+<!-- Section 3: Objections -->
+<div class="card">
+  <div class="card-header">Objections</div>
+  {% if analysis.objections %}
+  <p style="white-space:pre-wrap;margin:0;">{{ analysis.objections }}</p>
+  {% else %}
+  <p class="card-empty">No objections detected.</p>
+  {% endif %}
+</div>
+
+<!-- Section 4: Follow Up -->
+<div class="card">
+  <div class="card-header">Follow-Up Email</div>
+  {% if analysis.follow_up_email %}
+  <pre style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ analysis.follow_up_email }}</pre>
+  {% else %}
+  <p class="card-empty">No follow-up email generated.</p>
+  {% endif %}
+</div>
+
+<!-- Section 5: CRM Note -->
+<div class="card">
+  <div class="card-header">CRM Note</div>
+  {% if analysis.crm_note %}
+  <pre style="white-space:pre-wrap;font-family:inherit;margin:0;">{{ analysis.crm_note }}</pre>
+  {% if analysis.lead_id %}
+  <p style="margin-top:0.75rem;font-size:0.85rem;color:#6b7280;">Auto-synced to HubSpot if contact exists.</p>
+  {% endif %}
+  {% else %}
+  <p class="card-empty">No CRM note generated.</p>
+  {% endif %}
+</div>
+{% endblock %}

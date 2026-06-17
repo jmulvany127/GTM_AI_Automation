@@ -13,6 +13,7 @@ from app.routers.workflow import router as workflow_router
 from app.routers.hubspot import router as hubspot_router
 from app.routers.metrics import router as metrics_router
 from app.routers.dashboard import router as dashboard_router
+from app.routers.call_notes import router as call_notes_router
 
 
 @asynccontextmanager
@@ -32,6 +33,7 @@ app.include_router(workflow_router)
 app.include_router(hubspot_router)
 app.include_router(metrics_router)
 app.include_router(dashboard_router)
+app.include_router(call_notes_router)
 
 
 @app.get("/health")

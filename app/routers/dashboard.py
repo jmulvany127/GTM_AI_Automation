@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.analysis import LeadAnalysis
+from app.models.call_analysis import CallAnalysis
 from app.models.crm_log import CrmSyncLog
 from app.models.lead import Lead
 from app.models.outreach import OutreachMessage
@@ -83,3 +84,26 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
 async def dashboard_metrics(request: Request, db: AsyncSession = Depends(get_db)):
     metrics = await metrics_service.get_roi_metrics(db)
     return templates.TemplateResponse(request, "metrics.html", {"metrics": metrics})
+
+
+@router.get("/call-notes", response_class=HTMLResponse)
+async def dashboard_call_notes_list(request: Request, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(CallAnalysis).order_by(desc(CallAnalysis.created_at)))
+    analyses = result.scalars().all()
+
+    rows = []
+    for analysis in analyses:
+        lead = None
+        if analysis.lead_id is not None:
+            lead = await db.get(Lead, analysis.lead_id)
+        rows.append({"analysis": analysis, "lead": lead})
+
+    return templates.TemplateResponse(request, "call_notes_list.html", {"analyses": rows})
+
+
+@router.get("/call-notes/{analysis_id}", response_class=HTMLResponse)
+async def dashboard_call_analysis(analysis_id: int, request: Request, db: AsyncSession = Depends(get_db)):
+    analysis = await db.get(CallAnalysis, analysis_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Call analysis not found")
+    return templates.TemplateResponse(request, "call_analysis.html", {"analysis": analysis})
