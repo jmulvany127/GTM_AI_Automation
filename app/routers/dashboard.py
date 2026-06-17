@@ -134,4 +134,11 @@ async def dashboard_call_analysis(analysis_id: int, request: Request, db: AsyncS
     analysis = await db.get(CallAnalysis, analysis_id)
     if not analysis:
         raise HTTPException(status_code=404, detail="Call analysis not found")
-    return templates.TemplateResponse(request, "call_analysis.html", {"analysis": analysis})
+    lead = None
+    if analysis.lead_id is not None:
+        lead = await db.get(Lead, analysis.lead_id)
+    return templates.TemplateResponse(
+        request,
+        "call_analysis.html",
+        {"analysis": analysis, "lead": lead}
+    )
