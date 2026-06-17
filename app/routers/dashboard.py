@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, desc, distinct
@@ -111,6 +111,21 @@ async def dashboard_call_notes_list(request: Request, db: AsyncSession = Depends
         request,
         "call_notes_list.html",
         {"analyses": rows, "all_leads": all_leads},
+    )
+
+
+@router.get("/call-notes/new", response_class=HTMLResponse)
+async def dashboard_call_notes_new(
+    request: Request,
+    lead_id: int | None = Query(default=None),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Lead).order_by(Lead.first_name))
+    all_leads = result.scalars().all()
+    return templates.TemplateResponse(
+        request,
+        "call_notes_new.html",
+        {"all_leads": all_leads, "preselected_lead_id": lead_id}
     )
 
 

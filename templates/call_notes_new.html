@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}New Call Analysis — GTM AI OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>New Call Analysis</h1>
+  <a href="/dashboard/call-notes" class="btn btn-secondary">← Back to Call Notes</a>
+</div>
+
+<div class="card">
+  <div class="form-group">
+    <label for="input-title">Title <span class="form-optional">(optional)</span></label>
+    <input type="text" id="input-title" maxlength="255" placeholder="e.g. Discovery call with Sarah Chen — Greystar">
+    <p class="form-help">Leave blank and Claude will generate a title from the transcript.</p>
+  </div>
+
+  <div class="form-group">
+    <label for="input-description">Description <span class="form-optional">(optional)</span></label>
+    <textarea id="input-description" rows="3" placeholder="Brief summary of what this call was about…"></textarea>
+    <p class="form-help">Leave blank and Claude will generate a description.</p>
+  </div>
+
+  <div class="form-group">
+    <label for="input-lead">Lead <span class="form-optional">(optional)</span></label>
+    <select id="input-lead">
+      <option value="">No lead linked</option>
+      {% for lead in all_leads %}
+      <option value="{{ lead.id }}" {% if preselected_lead_id == lead.id %}selected{% endif %}>{{ lead.first_name }} {{ lead.last_name }}{% if lead.company %} — {{ lead.company }}{% endif %}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="input-transcript">Transcript <span class="form-required">*</span></label>
+    <textarea id="input-transcript" rows="10" required placeholder="Paste the full call transcript here (minimum 50 characters)…"></textarea>
+  </div>
+
+  <button type="button" id="submit-btn" class="btn btn-primary" onclick="submitForm()">Analyse Call</button>
+  <div id="error-msg" class="form-error" style="display:none;"></div>
+</div>
+
+<script>
+async function submitForm() {
+  const transcript = document.getElementById('input-transcript').value.trim();
+  if (transcript.length < 50) {
+    showError('Transcript must be at least 50 characters.');
+    return;
+  }
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Analysing…';
+  const errorEl = document.getElementById('error-msg');
+  errorEl.style.display = 'none';
+
+  const leadVal = document.getElementById('input-lead').value;
+  const payload = {
+    transcript: transcript,
+    title: document.getElementById('input-title').value.trim() || null,
+    description: document.getElementById('input-description').value.trim() || null,
+    lead_id: leadVal ? parseInt(leadVal, 10) : null
+  };
+
+  try {
+    const res = await fetch('/call-notes/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showError('Error: ' + (data.detail || res.statusText));
+      btn.disabled = false;
+      btn.textContent = 'Analyse Call';
+      return;
+    }
+    const data = await res.json();
+    window.location.href = '/dashboard/call-notes/' + data.id;
+  } catch (err) {
+    showError('Request failed: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Analyse Call';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+</script>
+{% endblock %}

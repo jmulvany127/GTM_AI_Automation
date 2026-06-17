@@ -283,3 +283,66 @@ tbody td {
 .page-header h1 {
   margin-bottom: 0;
 }
+
+/* Form elements */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.35rem;
+}
+
+.form-group input[type="text"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 5px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  color: #2d3748;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+.form-optional {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #a0aec0;
+  margin-left: 0.25rem;
+}
+
+.form-required {
+  color: #e53e3e;
+  margin-left: 0.15rem;
+}
+
+.form-help {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-top: 0.3rem;
+}
+
+.form-error {
+  font-size: 0.85rem;
+  color: #e53e3e;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 5px;
+  padding: 0.6rem 0.85rem;
+  margin-top: 1rem;
+}
