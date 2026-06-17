@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Metrics — GTM AI OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>ROI Metrics</h1>
+</div>
+
+<div class="metrics-grid">
+  <div class="stat-card">
+    <div class="stat-label">Leads Processed</div>
+    <div class="stat-value">{{ metrics.total_leads_processed }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">High Priority Leads</div>
+    <div class="stat-value">{{ metrics.high_priority_leads }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Hours Saved</div>
+    <div class="stat-value">
+      {{ "%.2f"|format(metrics.estimated_hours_saved) }}<span class="stat-unit">hrs</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Avg Processing Time</div>
+    <div class="stat-value">
+      {{ "%.2f"|format(metrics.average_processing_time_seconds) }}<span class="stat-unit">sec</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Avg Lead Score</div>
+    <div class="stat-value">{{ "%.2f"|format(metrics.average_lead_score) }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">HubSpot Sync Success</div>
+    <div class="stat-value">
+      {{ "%.0f"|format(metrics.hubspot_sync_success_rate * 100) }}<span class="stat-unit">%</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
