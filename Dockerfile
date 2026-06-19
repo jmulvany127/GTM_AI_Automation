@@ -12,6 +12,7 @@ COPY templates/ ./templates/
 COPY static/ ./static/
 COPY tests/ ./tests/
 COPY pytest.ini .
+COPY scripts/ ./scripts/
 
 EXPOSE 8000
 
