@@ -494,6 +494,30 @@ http://localhost:8000/docs
 
 ---
 
+## Seed Data
+
+The seed script populates the database with 20 realistic B2B leads from the residential housing and property management sector, runs the full GTM pipeline (analysis, outreach generation, and agent workflow) on each new lead, and submits 6 realistic sales call transcripts for AI analysis. The script is idempotent — leads are matched by email address, so running it multiple times is safe and duplicate leads are skipped automatically.
+
+**Prerequisites:** The application must be running before executing the seed script.
+
+```bash
+docker compose up --build
+```
+
+**Run the seed script:**
+
+```bash
+docker compose exec api python scripts/seed.py
+```
+
+**Reset all seeded data** (requires typing `yes` to confirm):
+
+```bash
+docker compose exec api python scripts/reset_db.py
+```
+
+---
+
 # Future Improvements
 
 ### CRM Integrations
