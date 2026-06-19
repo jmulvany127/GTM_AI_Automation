@@ -1,5 +1,9 @@
 import asyncio
 import os
+import sys
+
+# Ensure project root (/app) is on sys.path when invoked as `python scripts/reset_db.py`
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker

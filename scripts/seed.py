@@ -1,6 +1,10 @@
 import asyncio
 import os
+import sys
 import time
+
+# Ensure project root (/app) is on sys.path when invoked as `python scripts/seed.py`
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import httpx
 from sqlalchemy import select, func
