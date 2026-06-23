@@ -8,18 +8,34 @@ _logger = logging.getLogger(__name__)
 
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
 
-_SYSTEM_PROMPT = """You are a B2B outreach channel and timing decision agent for a Go-To-Market automation platform.
+_SYSTEM_PROMPT = """You are a specialised B2B outreach execution agent for a Go-To-Market automation platform.
 
-Your role is ONLY to decide which communication channel(s) to use for a lead and whether human review is needed.
-You do NOT write outreach content — content has already been generated. You decide the execution strategy.
+Your responsibility is the FULL outreach motion for each lead: you generate all outreach content AND make the channel execution decision in a single pass.
 
-## Decision Signals
+## Content You Must Generate
 
-### Channel Selection (chosen_channel)
+- **subject** — a personalised email subject line
+- **email_body** — a personalised, ready-to-send email under 130 words
+- **follow_up_email** — a follow-up email under 90 words, sent if no reply after 5 days
+- **linkedin_message** — a LinkedIn connection/message under 300 characters. This message will be sent MANUALLY by a human sales rep — it must be complete, professional, and ready to copy-paste without edits.
+- **call_notes** — brief call preparation notes covering key talking points and objections
+
+## Execution Decision You Must Make
+
+After generating content, decide:
+
+- **chosen_channel** — one of: "email", "linkedin", "both", or "deferred"
+- **agent_reasoning** — 2–3 sentences explaining your channel and review decision
+- **requires_human_review** — boolean
+- **review_reason** — brief explanation if requires_human_review is true, otherwise null
+- **personalisation_notes** — optional timing, tone, or approach notes; null if none
+
+## Decision Guidance (these are enforced in code — use them as signals, not hard constraints)
+
+### Channel Selection
 - overall_score >= 80 → prefer "both" (email + LinkedIn)
 - overall_score 60–79 → prefer "email"
 - overall_score < 60 → "deferred" and set requires_human_review=true
-- If linkedin_message is empty, null, or missing in the outreach data → exclude LinkedIn; never choose "both" or "linkedin"
 - Personal email domains (gmail.com, hotmail.com, yahoo.com, outlook.com) → "deferred" and requires_human_review=true
 
 ### Human Review Triggers
@@ -34,18 +50,28 @@ You do NOT write outreach content — content has already been generated. You de
 ## Output Format
 Return ONLY a valid JSON object — no explanation, no markdown fences:
 {
+  "subject": "<email subject>",
+  "email_body": "<personalised email body under 130 words>",
+  "follow_up_email": "<follow-up email under 90 words>",
+  "linkedin_message": "<LinkedIn message under 300 characters>",
+  "call_notes": "<brief call preparation notes>",
   "chosen_channel": "<email|linkedin|both|deferred>",
-  "agent_reasoning": "<brief explanation of why this channel and review status was chosen>",
+  "agent_reasoning": "<2-3 sentences>",
   "requires_human_review": false,
-  "review_reason": "<null if no review needed, or brief reason>",
-  "personalisation_notes": "<optional notes on timing, tone, or approach — null if none>"
+  "review_reason": "<null or brief reason>",
+  "personalisation_notes": "<null or notes>"
 }"""
 
 _FALLBACK: dict = {
-    "chosen_channel": "email",
-    "agent_reasoning": "Agent decision unavailable — defaulting to email.",
+    "subject": None,
+    "email_body": None,
+    "follow_up_email": None,
+    "linkedin_message": None,
+    "call_notes": None,
+    "chosen_channel": "deferred",
+    "agent_reasoning": "Agent unavailable — review before sending.",
     "requires_human_review": True,
-    "review_reason": "Agent decision unavailable",
+    "review_reason": "Agent unavailable — review before sending",
     "personalisation_notes": None,
     "fallback": True,
 }
@@ -91,13 +117,12 @@ def _apply_deterministic_overrides(result: dict, lead: dict, analysis: dict, out
     return result
 
 
-async def run_outreach_agent(lead: dict, analysis: dict, outreach: dict) -> dict:
+async def run_outreach_agent(lead: dict, analysis: dict) -> dict:
     settings = get_settings()
     client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
 
     email = lead.get("email", "")
     email_domain = email.split("@")[-1] if email and "@" in email else "unknown"
-    linkedin_message = outreach.get("linkedin_message") or ""
 
     user_message = (
         f"Lead Information:\n"
@@ -113,24 +138,21 @@ async def run_outreach_agent(lead: dict, analysis: dict, outreach: dict) -> dict
         f"Pain Points: {analysis.get('pain_points') or 'Unknown'}\n"
         f"Buying Signals: {analysis.get('buying_signals') or 'None'}\n"
         f"Recommended Action: {analysis.get('recommended_action') or 'Unknown'}\n\n"
-        f"Outreach Content Available:\n"
-        f"Email Subject: {outreach.get('subject') or 'Not generated'}\n"
-        f"Email Body: {'Yes' if outreach.get('email_body') else 'No'}\n"
-        f"Follow-up Email: {'Yes' if outreach.get('follow_up_email') else 'No'}\n"
-        f"LinkedIn Message: {'Yes — ' + linkedin_message[:80] if linkedin_message else 'No — LinkedIn message is missing or empty'}\n"
-        f"Call Notes: {'Yes' if outreach.get('call_notes') else 'No'}\n"
+        f"Generate all outreach content for this lead and make the channel execution decision."
     )
 
     try:
         response = await client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=512,
+            max_tokens=1024,
             system=_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_message}],
         )
         raw_text = response.content[0].text
         result = json.loads(_extract_json(raw_text))
-        result = _apply_deterministic_overrides(result, lead, analysis, outreach)
+        result = _apply_deterministic_overrides(
+            result, lead, analysis, {"linkedin_message": result.get("linkedin_message")}
+        )
         return result
     except Exception as exc:
         _logger.warning("Outreach agent service failed: %s", exc)
