@@ -85,7 +85,12 @@ async def execute_run_outreach_agent(lead, db: AsyncSession) -> dict:
     if agent_result.get("requires_human_review"):
         lead.status = "needs_review"
 
-    return {"agent_result": agent_result, "outreach_id": outreach.id, "log_id": log.id}
+    return {
+        "agent_result": agent_result,
+        "outreach_id": outreach.id,
+        "log_id": log.id,
+        "overall_score": analysis_dict.get("overall_score", 0) if analysis_obj else 0,
+    }
 
 
 async def execute_sync_hubspot(lead, db: AsyncSession) -> dict:
@@ -237,10 +242,7 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
         log = await db.get(OutreachExecutionLog, log_id) if log_id else None
 
         chosen_channel = agent_result.get("chosen_channel") or ""
-        overall_score = 0
-        # Get score from analysis results if available
-        if "analyze_lead" in results:
-            overall_score = results["analyze_lead"].get("overall_score") or 0
+        overall_score = result_data.get("overall_score") or 0
 
         new_status = "pending"
         if log and not agent_result.get("requires_human_review"):
@@ -253,8 +255,7 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
                 )
                 new_status = "sent" if sent else "failed"
             if chosen_channel in ("linkedin", "both"):
-                if new_status == "pending":
-                    new_status = "pending_manual"
+                new_status = "pending_manual"
             log.execution_status = new_status
             await db.commit()
 
@@ -290,9 +291,9 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
             token = get_settings().HUBSPOT_ACCESS_TOKEN
             try:
                 channel = agent_result.get("chosen_channel") or "unknown"
-                status = (log.execution_status if log else "unknown")
+                exec_status = (log.execution_status if log else "unknown")
                 linkedin_pending = "LinkedIn message pending manual send." if chosen_channel in ("linkedin", "both") else ""
-                note = f"Outreach agent executed.\nChannel: {channel}\nEmail status: {status}\n{linkedin_pending}".strip()
+                note = f"Outreach agent executed.\nChannel: {channel}\nEmail status: {exec_status}\n{linkedin_pending}".strip()
                 await hubspot_service.create_call_note(token, crm_sync.external_contact_id, note)
             except Exception as exc:
                 _logger.warning("HubSpot outreach note failed for lead %s: %s", lead_id, exc)
