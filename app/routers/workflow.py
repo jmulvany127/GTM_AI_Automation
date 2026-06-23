@@ -91,6 +91,7 @@ async def execute_run_outreach_agent(lead, db: AsyncSession) -> dict:
         "outreach_id": outreach.id,
         "log_id": log.id,
         "overall_score": analysis_dict.get("overall_score", 0) if analysis_obj else 0,
+        "recommended_action": analysis_dict.get("recommended_action", "") if analysis_obj else "",
     }
 
 
@@ -267,7 +268,7 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
                     company=lead.company or "",
                     overall_score=overall_score,
                     chosen_channel=chosen_channel,
-                    recommended_action=results.get("analyze_lead", {}).get("recommended_action") or "",
+                    recommended_action=result_data.get("recommended_action") or "",
                     lead_id=lead_id,
                 ))
         elif log and agent_result.get("requires_human_review"):

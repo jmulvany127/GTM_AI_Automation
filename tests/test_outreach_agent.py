@@ -11,6 +11,7 @@ from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.database import get_db
+from app.services import gmail_service
 
 _NOW = datetime(2026, 6, 16, 14, 0, 0)
 
@@ -63,6 +64,13 @@ def _scalar_result(obj):
     r = MagicMock()
     r.scalar_one_or_none.return_value = obj
     return r
+
+
+def _agent_response(plan_dict: dict):
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock()]
+    mock_response.content[0].text = json.dumps(plan_dict)
+    return mock_response
 
 
 @asynccontextmanager
@@ -376,3 +384,82 @@ async def test_deterministic_override_personal_email_forces_deferred():
 
     assert result["chosen_channel"] == "deferred"
     assert result["requires_human_review"] is True
+
+
+# ---------------------------------------------------------------------------
+# Test 9: Orchestrator path — Gmail and Slack fired for run_outreach_agent plan
+# ---------------------------------------------------------------------------
+
+async def test_orchestrator_gmail_and_slack_called_for_run_outreach_agent():
+    from app.models.outreach import OutreachMessage
+    from app.models.outreach_execution_log import OutreachExecutionLog
+
+    lead = _make_lead()
+    analysis = _make_analysis(overall_score=78)  # >= 70 triggers Slack
+
+    # flush_counter tracks how many flushes have occurred so we can assign ids
+    # to the outreach and log objects added before each flush.
+    added_objects: list = []
+    flush_count = 0
+
+    async def fake_flush():
+        nonlocal flush_count
+        flush_count += 1
+        # First flush: outreach was added (id=10); second flush: log was added (id=5)
+        for obj in added_objects:
+            if isinstance(obj, OutreachMessage) and obj.id is None:
+                obj.id = 10
+            elif isinstance(obj, OutreachExecutionLog) and obj.id is None:
+                obj.id = 5
+
+    def fake_add(obj):
+        added_objects.append(obj)
+
+    # Mock log returned from db.get after commit
+    mock_log = MagicMock()
+    mock_log.id = 5
+    mock_log.execution_status = "pending"
+    mock_log.requires_human_review = False
+    mock_log.chosen_channel = "email"
+
+    mock_db = AsyncMock()
+    mock_db.add = MagicMock(side_effect=fake_add)
+    mock_db.flush = AsyncMock(side_effect=fake_flush)
+    mock_db.get = AsyncMock(return_value=mock_log)
+    mock_db.execute = AsyncMock(side_effect=[
+        _scalar_result(lead),      # 1. fetch lead
+        _scalar_result(None),      # 2. no existing AutomationMetrics
+        _scalar_result(analysis),  # 3. latest_analysis for plan
+        _scalar_result(analysis),  # 4. analysis inside execute_run_outreach_agent
+        _scalar_result(None),      # 5. no CrmSyncLog after commit
+    ])
+
+    plan = {
+        "actions": ["run_outreach_agent"],
+        "requires_human_review": False,
+        "reasoning_summary": "Outreach only",
+    }
+
+    with patch("app.agents.gtm_workflow_agent.AsyncAnthropic") as mock_gtm_cls, \
+         patch("app.routers.workflow.run_outreach_agent", new_callable=AsyncMock) as mock_agent, \
+         patch("app.routers.workflow.asyncio.to_thread", new_callable=AsyncMock) as mock_thread, \
+         patch("app.routers.workflow.slack_service.send_alert", new_callable=AsyncMock) as mock_slack:
+
+        mock_gtm_client = AsyncMock()
+        mock_gtm_cls.return_value = mock_gtm_client
+        mock_gtm_client.messages.create = AsyncMock(return_value=_agent_response(plan))
+
+        mock_agent.return_value = {
+            **_COMBINED_AGENT_RESULT,
+            "chosen_channel": "email",
+            "requires_human_review": False,
+        }
+        mock_thread.return_value = True  # email sent successfully
+
+        async with _client_with_db(mock_db) as client:
+            response = await client.post("/leads/1/run-agent")
+
+    assert response.status_code == 200
+    mock_thread.assert_called_once()
+    assert mock_thread.call_args.args[0] == gmail_service.send_email
+    mock_slack.assert_called_once()  # overall_score=78 >= 70
