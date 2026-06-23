@@ -1,3 +1,6 @@
+import asyncio
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -10,6 +13,9 @@ from app.models.outreach import OutreachMessage
 from app.models.outreach_execution_log import OutreachExecutionLog
 from app.schemas.lead import LeadCreate, LeadRead, LeadUpdate
 from app.services.outreach_agent_service import run_outreach_agent
+from app.services import gmail_service, slack_service
+
+_logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/leads", tags=["leads"])
 
@@ -140,6 +146,56 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
     if log.requires_human_review:
         lead.status = "needs_review"
         await db.commit()
+
+    # --- Sending and alerting ---
+    chosen_channel = log.chosen_channel or ""
+    overall_score = analysis_dict.get("overall_score") or 0
+
+    if log.requires_human_review:
+        review_alert = slack_service.build_review_alert(
+            first_name=lead_dict["first_name"],
+            last_name=lead_dict["last_name"],
+            company=lead_dict.get("company") or "",
+            overall_score=overall_score,
+            review_reason=log.review_reason,
+            lead_id=lead_id,
+        )
+        await slack_service.send_alert(review_alert)
+    else:
+        new_status = "pending"
+
+        if chosen_channel in ("email", "both"):
+            sent = await asyncio.to_thread(
+                gmail_service.send_email,
+                lead_dict["email"],
+                outreach_dict.get("subject") or "",
+                outreach_dict.get("email_body") or "",
+            )
+            new_status = "sent" if sent else "failed"
+
+        if chosen_channel in ("linkedin", "both"):
+            _logger.info(
+                "LinkedIn sending not yet automated for lead %s — manual action required",
+                lead_id,
+            )
+            if new_status == "pending":
+                new_status = "linkedin_pending"
+
+        log.execution_status = new_status
+        await db.commit()
+
+        # Slack alert for high-scoring leads (threshold 70 = 7.0/10)
+        if overall_score >= 70:
+            lead_alert = slack_service.build_lead_alert(
+                first_name=lead_dict["first_name"],
+                last_name=lead_dict["last_name"],
+                company=lead_dict.get("company") or "",
+                overall_score=overall_score,
+                chosen_channel=chosen_channel,
+                recommended_action=analysis_dict.get("recommended_action") or "",
+                lead_id=lead_id,
+            )
+            await slack_service.send_alert(lead_alert)
 
     return {
         "id": log.id,
