@@ -117,6 +117,15 @@
     <span class="detail-label">Call Notes</span>
     <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.call_notes or "—" }}</span>
   </div>
+  {% if execution_log and (execution_log.chosen_channel in ("linkedin", "both") or execution_log.execution_status == "pending_manual") %}
+  <div class="linkedin-callout" style="margin-top:16px;padding:12px 16px;background:#e8f4fd;border-left:4px solid #0077b5;border-radius:4px;">
+    <strong style="color:#0077b5;">Manual action required — send the LinkedIn message below</strong>
+    <div style="margin-top:8px;position:relative;">
+      <textarea id="linkedin-copy-{{ lead.id }}" readonly style="width:100%;min-height:80px;font-family:inherit;padding:8px;border:1px solid #ccc;border-radius:4px;resize:vertical;">{{ outreach.linkedin_message or "" }}</textarea>
+      <button onclick="copyLinkedIn('{{ lead.id }}')" style="margin-top:6px;" class="btn btn-secondary">Copy to clipboard</button>
+    </div>
+  </div>
+  {% endif %}
   {% else %}
   <p class="card-empty">No outreach generated yet.</p>
   {% endif %}
@@ -153,13 +162,13 @@
     <span class="detail-label">Decided At</span>
     <span class="detail-value">{{ execution_log.created_at.strftime("%Y-%m-%d %H:%M") if execution_log.created_at else "—" }}</span>
   </div>
-  {% elif outreach %}
+  {% elif analysis %}
   <p class="card-empty">
-    Outreach generated but no agent decision yet.
+    Analysis complete — ready to run the outreach agent.
     <button class="btn btn-primary" id="run-outreach-btn-{{ lead.id }}" onclick="runOutreachAgent({{ lead.id }}, this)">Run Outreach Agent</button>
   </p>
   {% else %}
-  <p class="card-empty">No outreach generated yet.</p>
+  <p class="card-empty">No analysis yet — run the agent first.</p>
   {% endif %}
 </div>
 
@@ -251,6 +260,12 @@ async function runAgent(leadId, btn) {
     btn.disabled = false;
     btn.textContent = original;
   }
+}
+
+function copyLinkedIn(leadId) {
+  const el = document.getElementById('linkedin-copy-' + leadId);
+  el.select();
+  document.execCommand('copy');
 }
 
 async function runOutreachAgent(leadId, btn) {
