@@ -140,6 +140,15 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
     if lead is None:
         raise HTTPException(status_code=404, detail="Lead not found")
 
+    existing_metrics = await db.execute(
+        select(AutomationMetrics).where(AutomationMetrics.lead_id == lead_id).limit(1)
+    )
+    if existing_metrics.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Agent has already been run on this lead. Each lead can only be processed once.",
+        )
+
     analysis_result = await db.execute(
         select(LeadAnalysis)
         .where(LeadAnalysis.lead_id == lead_id)

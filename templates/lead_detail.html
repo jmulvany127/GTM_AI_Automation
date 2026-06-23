@@ -19,7 +19,7 @@
       onclick="runAgent({{ lead.id }}, this)"
     >Run Agent</button>
     {% else %}
-    <span class="agent-last-run">Agent last run: {{ agent_run.created_at.strftime("%Y-%m-%d %H:%M") if agent_run.created_at else "unknown" }}</span>
+    <span class="agent-last-run">Agent run on {{ agent_run.created_at.strftime("%Y-%m-%d") if agent_run.created_at else "unknown" }}</span>
     {% endif %}
   </div>
   <div class="detail-grid">
