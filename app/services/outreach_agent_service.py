@@ -82,7 +82,7 @@ def _extract_json(text: str) -> str:
     return match.group(1).strip() if match else text.strip()
 
 
-def _apply_deterministic_overrides(result: dict, lead: dict, analysis: dict, outreach: dict) -> dict:
+def _apply_deterministic_overrides(result: dict, lead: dict, analysis: dict) -> dict:
     """Enforce hard rules the LLM cannot override."""
     personal_domains = {"gmail.com", "hotmail.com", "yahoo.com", "outlook.com"}
     email = lead.get("email", "")
@@ -108,7 +108,7 @@ def _apply_deterministic_overrides(result: dict, lead: dict, analysis: dict, out
         result["review_reason"] = result.get("review_reason") or f"Low confidence score ({confidence:.2f})"
 
     # Missing linkedin_message → strip linkedin from chosen_channel
-    if not outreach.get("linkedin_message"):
+    if not result.get("linkedin_message"):
         if result.get("chosen_channel") == "linkedin":
             result["chosen_channel"] = "email"
         elif result.get("chosen_channel") == "both":
@@ -150,9 +150,7 @@ async def run_outreach_agent(lead: dict, analysis: dict) -> dict:
         )
         raw_text = response.content[0].text
         result = json.loads(_extract_json(raw_text))
-        result = _apply_deterministic_overrides(
-            result, lead, analysis, {"linkedin_message": result.get("linkedin_message")}
-        )
+        result = _apply_deterministic_overrides(result, lead, analysis)
         return result
     except Exception as exc:
         _logger.warning("Outreach agent service failed: %s", exc)

@@ -92,6 +92,7 @@ async def test_run_outreach_agent_returns_200_with_correct_shape():
         _scalar_result(analysis),
         _scalar_result(None),    # no CRM sync
     ])
+    mock_db.add = MagicMock()
     mock_db.refresh = AsyncMock()
     mock_db.commit = AsyncMock()
 
@@ -308,7 +309,7 @@ async def test_gmail_not_called_when_review_required():
 # Test 7: Slack called when score is >= 70
 # ---------------------------------------------------------------------------
 
-async def test_slack_called_when_score_is_7_or_above():
+async def test_slack_called_when_score_is_70_or_above():
     lead = _make_lead()
     analysis = _make_analysis(overall_score=78)
 
