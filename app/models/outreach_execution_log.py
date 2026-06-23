@@ -14,5 +14,6 @@ class OutreachExecutionLog(Base):
     chosen_channel: Mapped[str | None] = mapped_column(String(50), default=None)
     requires_human_review: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     review_reason: Mapped[str | None] = mapped_column(Text, default=None)
+    personalisation_notes: Mapped[str | None] = mapped_column(Text, default=None)
     execution_status: Mapped[str] = mapped_column(String(50), server_default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

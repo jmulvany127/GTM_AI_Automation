@@ -156,6 +156,11 @@
     <span class="detail-value">{{ execution_log.review_reason }}</span>
     {% endif %}
 
+    {% if execution_log.personalisation_notes %}
+    <span class="detail-label">Personalisation Notes</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ execution_log.personalisation_notes }}</span>
+    {% endif %}
+
     <span class="detail-label">Execution Status</span>
     <span class="detail-value">{{ execution_log.execution_status }}</span>
 
