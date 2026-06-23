@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     ANTHROPIC_API_KEY: str
     HUBSPOT_ACCESS_TOKEN: str = ""
+    SLACK_WEBHOOK_URL: str = ""
+    GMAIL_APP_PASSWORD: str = ""
+    GMAIL_SENDER_ADDRESS: str = ""
 
 
 @lru_cache
