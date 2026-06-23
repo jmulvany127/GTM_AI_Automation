@@ -122,6 +122,47 @@
   {% endif %}
 </div>
 
+<!-- Section 3b: Outreach Agent Decision -->
+<div class="card">
+  <div class="card-header">Outreach Agent Decision</div>
+  {% if execution_log %}
+  <div class="detail-grid">
+    <span class="detail-label">Channel</span>
+    <span class="detail-value">{{ execution_log.chosen_channel or "—" }}</span>
+
+    <span class="detail-label">Reasoning</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{{ execution_log.agent_reasoning or "—" }}</span>
+
+    <span class="detail-label">Human Review Required</span>
+    <span class="detail-value">
+      {% if execution_log.requires_human_review %}
+        <span class="badge badge-needs_review">Yes</span>
+      {% else %}
+        <span class="badge badge-analyzed">No</span>
+      {% endif %}
+    </span>
+
+    {% if execution_log.review_reason %}
+    <span class="detail-label">Review Reason</span>
+    <span class="detail-value">{{ execution_log.review_reason }}</span>
+    {% endif %}
+
+    <span class="detail-label">Execution Status</span>
+    <span class="detail-value">{{ execution_log.execution_status }}</span>
+
+    <span class="detail-label">Decided At</span>
+    <span class="detail-value">{{ execution_log.created_at.strftime("%Y-%m-%d %H:%M") if execution_log.created_at else "—" }}</span>
+  </div>
+  {% elif outreach %}
+  <p class="card-empty">
+    Outreach generated but no agent decision yet.
+    <button class="btn btn-primary" id="run-outreach-btn-{{ lead.id }}" onclick="runOutreachAgent({{ lead.id }}, this)">Run Outreach Agent</button>
+  </p>
+  {% else %}
+  <p class="card-empty">No outreach generated yet.</p>
+  {% endif %}
+</div>
+
 <!-- Section 4: HubSpot Sync -->
 <div class="card">
   <div class="card-header">HubSpot Sync</div>
@@ -197,6 +238,27 @@ async function runAgent(leadId, btn) {
   btn.textContent = 'Running…';
   try {
     const res = await fetch('/leads/' + leadId + '/run-agent', { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert('Error: ' + (data.detail || res.statusText));
+      btn.disabled = false;
+      btn.textContent = original;
+      return;
+    }
+    window.location.reload();
+  } catch (err) {
+    alert('Request failed: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+async function runOutreachAgent(leadId, btn) {
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = 'Running…';
+  try {
+    const res = await fetch('/leads/' + leadId + '/run-outreach-agent', { method: 'POST' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       alert('Error: ' + (data.detail || res.statusText));
