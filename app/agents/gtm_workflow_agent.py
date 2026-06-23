@@ -10,7 +10,7 @@ _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
 
 _ALLOWED_ACTIONS = {
     "analyze_lead",
-    "generate_outreach",
+    "run_outreach_agent",
     "sync_hubspot",
     "create_hubspot_task",
     "mark_needs_review",
@@ -21,18 +21,20 @@ _SYSTEM_PROMPT = """You are a GTM (Go-To-Market) workflow orchestrator for a B2B
 
 Given a lead and optional analysis data, produce a JSON workflow plan specifying which actions to execute.
 
+The orchestrator delegates all outreach content generation and channel execution decisions entirely to the outreach agent — do not attempt to generate content or decide channels here.
+
 ## Decision Rules
 - If the lead email domain is personal (gmail.com, hotmail.com, yahoo.com, outlook.com): include mark_needs_review and do NOT include sync_hubspot
 - If company or job_title is missing: include mark_needs_review
 - If no analysis is provided: include analyze_lead as the first action
-- If overall_score >= 75: include generate_outreach and sync_hubspot
+- If overall_score >= 75: include run_outreach_agent and sync_hubspot
 - If overall_score >= 85: also include create_hubspot_task
 - If confidence_score < 0.6: include mark_needs_review
-- Never include both skip_outreach and generate_outreach
+- Never include both skip_outreach and run_outreach_agent
 
 ## Allowed Actions (use ONLY these — any other action will be rejected)
 - analyze_lead
-- generate_outreach
+- run_outreach_agent
 - sync_hubspot
 - create_hubspot_task
 - mark_needs_review
