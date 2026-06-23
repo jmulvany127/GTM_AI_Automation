@@ -56,6 +56,41 @@ def _extract_json(text: str) -> str:
     return match.group(1).strip() if match else text.strip()
 
 
+def _apply_deterministic_overrides(result: dict, lead: dict, analysis: dict, outreach: dict) -> dict:
+    """Enforce hard rules the LLM cannot override."""
+    personal_domains = {"gmail.com", "hotmail.com", "yahoo.com", "outlook.com"}
+    email = lead.get("email", "")
+    domain = email.split("@")[-1].lower() if "@" in email else ""
+
+    # Personal email domain → always deferred + human review
+    if domain in personal_domains:
+        result["chosen_channel"] = "deferred"
+        result["requires_human_review"] = True
+        result["review_reason"] = result.get("review_reason") or "Personal email domain"
+
+    # Low score → always deferred + human review
+    overall_score = analysis.get("overall_score") or 0
+    if overall_score < 60:
+        result["chosen_channel"] = "deferred"
+        result["requires_human_review"] = True
+        result["review_reason"] = result.get("review_reason") or f"Low overall score ({overall_score})"
+
+    # Low confidence → human review (keep channel but flag)
+    confidence = analysis.get("confidence_score") or 1.0
+    if confidence < 0.6:
+        result["requires_human_review"] = True
+        result["review_reason"] = result.get("review_reason") or f"Low confidence score ({confidence:.2f})"
+
+    # Missing linkedin_message → strip linkedin from chosen_channel
+    if not outreach.get("linkedin_message"):
+        if result.get("chosen_channel") == "linkedin":
+            result["chosen_channel"] = "email"
+        elif result.get("chosen_channel") == "both":
+            result["chosen_channel"] = "email"
+
+    return result
+
+
 async def run_outreach_agent(lead: dict, analysis: dict, outreach: dict) -> dict:
     settings = get_settings()
     client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
@@ -94,7 +129,9 @@ async def run_outreach_agent(lead: dict, analysis: dict, outreach: dict) -> dict
             messages=[{"role": "user", "content": user_message}],
         )
         raw_text = response.content[0].text
-        return json.loads(_extract_json(raw_text))
+        result = json.loads(_extract_json(raw_text))
+        result = _apply_deterministic_overrides(result, lead, analysis, outreach)
+        return result
     except Exception as exc:
         _logger.warning("Outreach agent service failed: %s", exc)
         return {**_FALLBACK}

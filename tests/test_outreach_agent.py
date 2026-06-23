@@ -263,3 +263,48 @@ async def test_handoff_called_when_generate_outreach_executed():
 
     assert response.status_code == 200
     mock_outreach_agent.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Test 5: Deterministic override — personal email domain forces deferred + review
+# ---------------------------------------------------------------------------
+
+async def test_deterministic_override_personal_email_forces_deferred():
+    from app.services.outreach_agent_service import run_outreach_agent
+
+    llm_response = {
+        "chosen_channel": "both",
+        "requires_human_review": False,
+        "review_reason": None,
+        "agent_reasoning": "test",
+        "personalisation_notes": None,
+    }
+
+    lead_dict = {
+        "id": 1, "first_name": "Test", "last_name": "User",
+        "email": "test@gmail.com", "company": "Some Corp",
+        "job_title": "Manager", "source": "Web",
+    }
+    analysis_dict = {
+        "overall_score": 80,
+        "confidence_score": 0.9,
+        "persona_type": "Champion",
+    }
+    outreach_dict = {
+        "subject": "Hello",
+        "email_body": "Body text.",
+        "linkedin_message": "LinkedIn text.",
+    }
+
+    with patch("app.services.outreach_agent_service.AsyncAnthropic") as mock_cls:
+        mock_client = AsyncMock()
+        mock_cls.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock()]
+        mock_response.content[0].text = json.dumps(llm_response)
+        mock_client.messages.create = AsyncMock(return_value=mock_response)
+
+        result = await run_outreach_agent(lead_dict, analysis_dict, outreach_dict)
+
+    assert result["chosen_channel"] == "deferred"
+    assert result["requires_human_review"] is True
