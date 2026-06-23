@@ -13,6 +13,7 @@ from app.models.crm_log import CrmSyncLog
 from app.models.lead import Lead
 from app.models.metrics import AutomationMetrics
 from app.models.outreach import OutreachMessage
+from app.models.outreach_execution_log import OutreachExecutionLog
 from app.services import metrics_service
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -94,6 +95,14 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
     )
     outreach = outreach_result.scalar_one_or_none()
 
+    execution_log_result = await db.execute(
+        select(OutreachExecutionLog)
+        .where(OutreachExecutionLog.lead_id == lead_id)
+        .order_by(desc(OutreachExecutionLog.created_at))
+        .limit(1)
+    )
+    execution_log = execution_log_result.scalar_one_or_none()
+
     crm_result = await db.execute(
         select(CrmSyncLog)
         .where(CrmSyncLog.lead_id == lead_id)
@@ -124,6 +133,7 @@ async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession
             "lead": lead,
             "analysis": analysis,
             "outreach": outreach,
+            "execution_log": execution_log,
             "crm_sync": crm_sync,
             "call_analyses": call_analyses,
             "agent_run": agent_run,
