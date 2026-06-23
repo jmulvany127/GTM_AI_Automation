@@ -470,6 +470,21 @@ HUBSPOT_ACCESS_TOKEN=your_token_here
 
 ---
 
+## Environment Variables
+
+| Variable | Description | Required | Where to get it |
+|---|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string. Format: `postgresql://user:password@host:port/db` | **Required** | Set to `postgresql://postgres:postgres@db:5432/gtm_db` for local Docker development |
+| `ANTHROPIC_API_KEY` | API key for the Claude AI models used by the outreach agent | **Required** | [console.anthropic.com](https://console.anthropic.com) → API Keys |
+| `HUBSPOT_ACCESS_TOKEN` | Private app access token for the HubSpot CRM integration | Optional | HubSpot → Settings → Integrations → Private Apps → Create app |
+| `SLACK_WEBHOOK_URL` | Incoming Webhook URL for Slack alerts on high-scoring leads and human-review flags | Optional | Slack → App Directory → Incoming Webhooks → Add to Slack |
+| `GMAIL_SENDER_ADDRESS` | Gmail address used as the From address when sending outreach emails | Optional | The Gmail account you want to send from (e.g. `you@gmail.com`) |
+| `GMAIL_APP_PASSWORD` | Google App Password for the sender Gmail account — **not** the regular account password | Optional | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) (requires 2FA enabled on the Google account first) |
+
+The app starts and runs its full AI pipeline without `HUBSPOT_ACCESS_TOKEN`, `SLACK_WEBHOOK_URL`, `GMAIL_SENDER_ADDRESS`, or `GMAIL_APP_PASSWORD`. Those integrations are additive — omitting them disables only the corresponding outbound action.
+
+---
+
 ## Start Services
 
 ```bash
