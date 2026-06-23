@@ -103,6 +103,28 @@ thead th {
   white-space: nowrap;
 }
 
+/* Leads table: fixed layout so columns honour their widths and cells truncate */
+.leads-table {
+  table-layout: fixed;
+}
+
+.leads-table th:nth-child(1) { width: 14%; } /* Name */
+.leads-table th:nth-child(2) { width: 15%; } /* Company */
+.leads-table th:nth-child(3) { width: 19%; } /* Email */
+.leads-table th:nth-child(4) { width: 14%; } /* Title */
+.leads-table th:nth-child(5) { width: 12%; } /* Location */
+.leads-table th:nth-child(6) { width: 9%;  } /* Status */
+.leads-table th:nth-child(7) { width: 6%;  } /* Score */
+.leads-table th:nth-child(8) { width: 11%; } /* Actions */
+
+/* Truncate overflowing text in leads table cells */
+.leads-table td.cell-truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 0; /* required alongside table-layout:fixed for ellipsis to fire */
+}
+
 tbody tr {
   border-bottom: 1px solid #edf2f7;
   transition: background 0.1s;
