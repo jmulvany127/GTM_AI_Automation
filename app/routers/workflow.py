@@ -77,6 +77,7 @@ async def execute_run_outreach_agent(lead, db: AsyncSession) -> dict:
         chosen_channel=agent_result.get("chosen_channel"),
         requires_human_review=agent_result.get("requires_human_review", False),
         review_reason=agent_result.get("review_reason"),
+        personalisation_notes=agent_result.get("personalisation_notes"),
         execution_status="pending",
     )
     db.add(log)

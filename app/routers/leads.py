@@ -153,6 +153,7 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
         agent_reasoning=agent_result.get("agent_reasoning"),
         requires_human_review=agent_result.get("requires_human_review", False),
         review_reason=agent_result.get("review_reason"),
+        personalisation_notes=agent_result.get("personalisation_notes"),
         execution_status="pending",
     )
     db.add(log)
