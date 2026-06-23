@@ -51,18 +51,33 @@ async def dashboard_leads(request: Request, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Lead).order_by(desc(Lead.created_at)))
     leads = result.scalars().all()
 
+    lead_ids = [lead.id for lead in leads]
+
+    # Batch-fetch latest analysis scores for all leads in one query
+    analysis_scores: dict[int, int | None] = {}
+    if lead_ids:
+        analysis_result = await db.execute(
+            select(LeadAnalysis).where(LeadAnalysis.lead_id.in_(lead_ids))
+        )
+        for analysis in analysis_result.scalars().all():
+            # Keep only the highest-id (most recent) per lead
+            if analysis.lead_id not in analysis_scores:
+                analysis_scores[analysis.lead_id] = analysis.overall_score
+
+    # Batch-fetch all automation_metrics records in one query to determine processed leads
+    processed_lead_ids: set[int] = set()
+    if lead_ids:
+        metrics_result = await db.execute(
+            select(AutomationMetrics.lead_id).where(AutomationMetrics.lead_id.in_(lead_ids))
+        )
+        processed_lead_ids = {row for row in metrics_result.scalars().all()}
+
     lead_rows = []
     for lead in leads:
-        analysis_result = await db.execute(
-            select(LeadAnalysis)
-            .where(LeadAnalysis.lead_id == lead.id)
-            .order_by(desc(LeadAnalysis.created_at))
-            .limit(1)
-        )
-        analysis = analysis_result.scalar_one_or_none()
         lead_rows.append({
             "lead": lead,
-            "overall_score": analysis.overall_score if analysis else None,
+            "overall_score": analysis_scores.get(lead.id),
+            "agent_run": lead.id in processed_lead_ids,
         })
 
     return templates.TemplateResponse(request, "leads.html", {"leads": lead_rows})
