@@ -83,6 +83,15 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
     if lead is None:
         raise HTTPException(status_code=404, detail="Lead not found")
 
+    existing_log = await db.execute(
+        select(OutreachExecutionLog).where(OutreachExecutionLog.lead_id == lead_id).limit(1)
+    )
+    if existing_log.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=400,
+            detail="Outreach agent has already been run on this lead.",
+        )
+
     # Fetch most recent analysis
     analysis_result = await db.execute(
         select(LeadAnalysis)
