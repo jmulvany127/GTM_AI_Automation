@@ -11,9 +11,11 @@ from app.models.analysis import LeadAnalysis
 from app.models.crm_log import CrmSyncLog
 from app.models.outreach import OutreachMessage
 from app.models.metrics import AutomationMetrics
+from app.models.outreach_execution_log import OutreachExecutionLog
 from app.schemas.analysis import LeadAnalysisCreate
 from app.schemas.outreach import OutreachCreate
 from app.services import ai_service, outreach_service, hubspot_service
+from app.services.outreach_agent_service import run_outreach_agent
 from app.config import get_settings
 from app.agents import gtm_workflow_agent
 from app.agents.gtm_workflow_agent import _ALLOWED_ACTIONS
@@ -161,6 +163,51 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
         except Exception as exc:
             _logger.error("Executor %s failed: %s", action, exc)
             results[action] = {"status": "error", "detail": str(exc)}
+            continue
+
+        if action == "generate_outreach":
+            try:
+                analysis_row = await db.execute(
+                    select(LeadAnalysis)
+                    .where(LeadAnalysis.lead_id == lead.id)
+                    .order_by(LeadAnalysis.created_at.desc())
+                    .limit(1)
+                )
+                analysis_obj = analysis_row.scalar_one_or_none()
+
+                outreach_row = await db.execute(
+                    select(OutreachMessage)
+                    .where(OutreachMessage.lead_id == lead.id)
+                    .order_by(OutreachMessage.created_at.desc())
+                    .limit(1)
+                )
+                outreach_obj = outreach_row.scalar_one_or_none()
+
+                lead_dict = {k: getattr(lead, k) for k in ["id", "first_name", "last_name", "email", "company", "job_title", "source", "status", "company_website"]}
+                analysis_dict = {k: getattr(analysis_obj, k) for k in ["id", "persona_type", "pain_points", "buying_signals", "overall_score", "confidence_score", "recommended_action"]} if analysis_obj else {}
+                outreach_dict = {k: getattr(outreach_obj, k) for k in ["id", "subject", "email_body", "linkedin_message", "follow_up_email"]} if outreach_obj else {}
+
+                agent_result = await run_outreach_agent(lead_dict, analysis_dict, outreach_dict)
+
+                log = OutreachExecutionLog(
+                    lead_id=lead.id,
+                    outreach_message_id=outreach_obj.id if outreach_obj else None,
+                    agent_reasoning=agent_result.get("agent_reasoning"),
+                    chosen_channel=agent_result.get("chosen_channel"),
+                    requires_human_review=agent_result.get("requires_human_review", False),
+                    review_reason=agent_result.get("review_reason"),
+                    execution_status="completed",
+                )
+                db.add(log)
+                await db.flush()
+
+                if agent_result.get("requires_human_review"):
+                    lead.status = "needs_review"
+
+                results["outreach_agent"] = agent_result
+            except Exception as exc:
+                _logger.error("Outreach agent handoff failed: %s", exc)
+                results["outreach_agent"] = {"status": "error", "detail": str(exc)}
 
     automated_time_seconds = time.time() - start_time
     manual_time_estimate_minutes = 25
