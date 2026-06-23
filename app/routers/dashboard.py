@@ -67,6 +67,11 @@ async def dashboard_leads(request: Request, db: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(request, "leads.html", {"leads": lead_rows})
 
 
+@router.get("/leads/new", response_class=HTMLResponse)
+async def dashboard_lead_new(request: Request):
+    return templates.TemplateResponse(request, "lead_form.html", {})
+
+
 @router.get("/leads/{lead_id}", response_class=HTMLResponse)
 async def dashboard_lead_detail(lead_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     lead = await db.get(Lead, lead_id)

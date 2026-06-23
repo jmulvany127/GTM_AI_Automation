@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}New Lead — GTM AI OS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Add Lead</h1>
+</div>
+
+<div class="card lead-form-card">
+  <form id="lead-form" novalidate>
+
+    <div class="form-section">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="first_name">First Name <span class="form-required">*</span></label>
+          <input type="text" id="first_name" name="first_name" required autocomplete="given-name">
+        </div>
+        <div class="form-group">
+          <label for="last_name">Last Name <span class="form-required">*</span></label>
+          <input type="text" id="last_name" name="last_name" required autocomplete="family-name">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email <span class="form-required">*</span></label>
+        <input type="text" id="email" name="email" required autocomplete="email">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="company">Company <span class="form-optional">(optional)</span></label>
+          <input type="text" id="company" name="company" autocomplete="organization">
+        </div>
+        <div class="form-group">
+          <label for="job_title">Job Title <span class="form-optional">(optional)</span></label>
+          <input type="text" id="job_title" name="job_title" autocomplete="organization-title">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="phone">Phone <span class="form-optional">(optional)</span></label>
+          <input type="text" id="phone" name="phone" autocomplete="tel">
+        </div>
+        <div class="form-group">
+          <label for="company_website">Company Website <span class="form-optional">(optional)</span></label>
+          <input type="text" id="company_website" name="company_website" placeholder="https://...">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label for="city">City <span class="form-optional">(optional)</span></label>
+          <input type="text" id="city" name="city" autocomplete="address-level2">
+        </div>
+        <div class="form-group">
+          <label for="state">State <span class="form-optional">(optional)</span></label>
+          <input type="text" id="state" name="state" autocomplete="address-level1">
+        </div>
+        <div class="form-group">
+          <label for="country">Country <span class="form-optional">(optional)</span></label>
+          <input type="text" id="country" name="country" autocomplete="country-name">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="source">Source <span class="form-optional">(optional)</span></label>
+        <input type="text" id="source" name="source" placeholder="e.g. LinkedIn, Referral, Conference">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="notes">Notes <span class="form-optional">(optional)</span></label>
+      <textarea id="notes" name="notes" rows="4" placeholder="Any additional context..."></textarea>
+    </div>
+
+    <div id="form-error" class="form-error" style="display:none;"></div>
+
+    <div class="form-actions">
+      <a href="/dashboard/leads" class="btn btn-secondary">Cancel</a>
+      <button type="submit" id="submit-btn" class="btn btn-primary">Add Lead</button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+document.getElementById('lead-form').addEventListener('submit', async function (e) {
+  e.preventDefault();
+
+  const btn = document.getElementById('submit-btn');
+  const errorEl = document.getElementById('form-error');
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  errorEl.style.display = 'none';
+
+  const fieldNames = ['first_name', 'last_name', 'email', 'company', 'job_title',
+                      'company_website', 'phone', 'city', 'state', 'country', 'source', 'notes'];
+  const data = {};
+  fieldNames.forEach(function (name) {
+    const el = document.getElementById(name);
+    const val = el.value.trim();
+    if (val) data[name] = val;
+  });
+
+  try {
+    const res = await fetch('/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    const body = await res.json().catch(function () { return {}; });
+
+    if (!res.ok) {
+      const detail = body.detail;
+      let msg = 'An error occurred. Please try again.';
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map(function (d) { return d.msg || JSON.stringify(d); }).join('; ');
+      }
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Add Lead';
+      return;
+    }
+
+    window.location.href = '/dashboard/leads/' + body.id;
+  } catch (err) {
+    errorEl.textContent = 'Request failed: ' + err.message;
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Add Lead';
+  }
+});
+</script>
+{% endblock %}
