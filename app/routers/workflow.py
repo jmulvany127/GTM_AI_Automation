@@ -185,11 +185,24 @@ async def execute_run_outreach_agent(lead, db: AsyncSession) -> dict:
                 "LinkedIn sending not yet automated for lead %s — manual action required",
                 lead.id,
             )
-            if new_status == "pending":
-                new_status = "linkedin_pending"
+            new_status = "pending_manual"
+            lead.status = "action_required"
 
         log.execution_status = new_status
         await db.flush()
+
+        if chosen_channel in ("linkedin", "both"):
+            lead_url = f"http://localhost:8000/dashboard/leads/{lead.id}"
+            linkedin_notified = await slack_service.send_linkedin_action_required(
+                lead={**lead_dict, "overall_score": overall_score, "title": lead_dict.get("job_title", "")},
+                linkedin_message=agent_result.get("linkedin_message") or "",
+                lead_url=lead_url,
+            )
+            _logger.info(
+                "LinkedIn action required Slack notification for lead %s: %s",
+                lead.id,
+                "sent" if linkedin_notified else "failed",
+            )
 
         if overall_score >= 70:
             lead_alert = slack_service.build_lead_alert(
