@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +17,10 @@ from app.routers.workflow import execute_run_outreach_agent
 _logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/leads", tags=["leads"])
+
+
+class ParseRequest(BaseModel):
+    raw_text: str = Field(..., min_length=10)
 
 
 @router.post("", response_model=LeadRead, status_code=status.HTTP_201_CREATED)
@@ -35,6 +40,20 @@ async def create_lead(payload: LeadCreate, db: AsyncSession = Depends(get_db)):
 async def list_leads(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Lead))
     return result.scalars().all()
+
+
+@router.post("/parse")
+async def parse_lead(payload: ParseRequest):
+    from app.services.lead_parse_service import parse_lead_from_text
+    result = await parse_lead_from_text(payload.raw_text)
+    if "parse_error" in result:
+        raise HTTPException(status_code=422, detail=result["parse_error"])
+    if not result.get("email"):
+        raise HTTPException(
+            status_code=422,
+            detail="Could not extract an email address from the provided text. Email is required to create a lead.",
+        )
+    return result
 
 
 @router.get("/{lead_id}", response_model=LeadRead)
