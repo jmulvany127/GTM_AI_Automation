@@ -74,7 +74,19 @@ async def generate_outreach(lead, analysis) -> dict:
             if attempt == 1:
                 return {**_FALLBACK}
 
+    # DEBUG: trace LinkedIn message truncation root cause.
+    # Root causes identified from static analysis:
+    #   Cause B — max_tokens=1024 may be too low; if call_notes is verbose the
+    #              response can be cut mid-JSON, causing JSONDecodeError → all-None fallback.
+    #   Cause C — prompt says "under 300 characters" with no sentence-completeness
+    #              requirement; the model counts to 300 chars and stops mid-word.
+    # The debug lines below let us confirm which cause is active at runtime.
+    # Raw response from Claude (shows whether linkedin_message is truncated in the API reply):
+    _logger.debug("OUTREACH_DEBUG raw_response=%s", raw_text)
     try:
-        return json.loads(_extract_json(raw_text))
+        result = json.loads(_extract_json(raw_text))
+        # Full parsed linkedin_message value (shows whether truncation survives parsing):
+        _logger.debug("OUTREACH_DEBUG linkedin_message=%r", result.get("linkedin_message"))
+        return result
     except (json.JSONDecodeError, TypeError):
         return {**_FALLBACK}
