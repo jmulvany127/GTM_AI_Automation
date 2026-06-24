@@ -27,7 +27,14 @@
       {%- set full_name = item.lead.first_name ~ " " ~ item.lead.last_name -%}
       {%- set loc_parts = [item.lead.city, item.lead.state] | select | list -%}
       {%- set location = loc_parts | join(", ") if loc_parts else "—" -%}
-      <tr>
+      <tr
+        data-name="{{ full_name | lower }}"
+        data-company="{{ (item.lead.company or '') | lower }}"
+        data-title="{{ (item.lead.job_title or '') | lower }}"
+        data-city="{{ (item.lead.city or '') | lower }}"
+        data-state="{{ (item.lead.state or '') | lower }}"
+        data-created="{{ item.lead.created_at.strftime('%Y-%m-%d') if item.lead.created_at else '' }}"
+      >
         <td class="cell-truncate" title="{{ full_name }}">
           <a href="/dashboard/leads/{{ item.lead.id }}">{{ full_name }}</a>
         </td>
