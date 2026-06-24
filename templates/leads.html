@@ -64,7 +64,11 @@
         <td class="cell-truncate" title="{{ item.lead.job_title or '' }}">{{ item.lead.job_title or "—" }}</td>
         <td class="cell-truncate" title="{{ location }}">{{ location }}</td>
         <td>
+          {% if item.lead.status == "action_required" %}
+          <span class="badge badge-action-required">Action Required</span>
+          {% else %}
           <span class="badge badge-{{ item.lead.status }}">{{ item.lead.status }}</span>
+          {% endif %}
         </td>
         <td>{{ item.overall_score if item.overall_score is not none else "—" }}</td>
         <td>
