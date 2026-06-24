@@ -157,38 +157,10 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
         await db.commit()
 
     # --- Sending and alerting ---
-    # DIAGNOSTIC LOG OUTPUT (lead 25, 2026-06-24) — captured before Task 2 fixes:
-    # [DEBUG] outreach decision — chosen_channel='both' requires_human_review=False overall_score=70
-    # [DEBUG] path=sending — chosen_channel='both'
-    # [DEBUG] attempting Gmail send to 'alice.chen@salesforce-corp.net'
-    # [DEBUG] gmail_service: GMAIL_SENDER_ADDRESS present=True len=22  GMAIL_APP_PASSWORD present=True
-    # [DEBUG] Gmail send result — sent=True new_status='sent'
-    # [DEBUG] LinkedIn sending not yet automated for lead 25 — manual action required
-    # [DEBUG] Slack threshold check — overall_score=70 >= 70: True
-    # [DEBUG] slack_service: SLACK_WEBHOOK_URL present=True len=81
-    # ROOT CAUSE DIAGNOSIS:
-    # 1. docker-compose.yml uses `${VAR:-}` (default-to-empty-string) in the environment block.
-    #    Docker Compose resolves this from the .env file during compose interpolation, so on the
-    #    developer machine the vars are present. However if the host shell does NOT export these
-    #    vars (e.g. CI, fresh checkout, or running compose without the .env in scope), the
-    #    `environment` block overrides the `env_file` values with empty strings because
-    #    `environment` takes precedence over `env_file` in Docker Compose. This is a latent bug.
-    # 2. gmail_service.send_email silently returns False with no logging when env vars are
-    #    missing — making the failure completely invisible in Docker logs.
-    # 3. slack_service.send_alert silently returns False with no logging when SLACK_WEBHOOK_URL
-    #    is missing — same invisible failure pattern.
     chosen_channel = log.chosen_channel or ""
     overall_score = analysis_dict.get("overall_score") or 0
 
-    _logger.warning(
-        "[DEBUG] outreach decision — chosen_channel=%r requires_human_review=%r overall_score=%r",
-        chosen_channel,
-        log.requires_human_review,
-        overall_score,
-    )
-
     if log.requires_human_review:
-        _logger.warning("[DEBUG] path=human_review → sending Slack review alert")
         review_alert = slack_service.build_review_alert(
             first_name=lead_dict["first_name"],
             last_name=lead_dict["last_name"],
@@ -199,11 +171,9 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
         )
         await slack_service.send_alert(review_alert)
     else:
-        _logger.warning("[DEBUG] path=sending — chosen_channel=%r", chosen_channel)
         new_status = "pending"
 
         if chosen_channel in ("email", "both"):
-            _logger.warning("[DEBUG] attempting Gmail send to %r", lead_dict["email"])
             sent = await asyncio.to_thread(
                 gmail_service.send_email,
                 lead_dict["email"],
@@ -211,11 +181,10 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
                 outreach_dict.get("email_body") or "",
             )
             new_status = "sent" if sent else "failed"
-            _logger.warning("[DEBUG] Gmail send result — sent=%r new_status=%r", sent, new_status)
 
         if chosen_channel in ("linkedin", "both"):
-            _logger.warning(
-                "[DEBUG] LinkedIn sending not yet automated for lead %s — manual action required",
+            _logger.info(
+                "LinkedIn sending not yet automated for lead %s — manual action required",
                 lead_id,
             )
             if new_status == "pending":
@@ -225,7 +194,6 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
         await db.commit()
 
         # Slack alert for high-scoring leads (threshold 70 = 7.0/10)
-        _logger.warning("[DEBUG] Slack threshold check — overall_score=%r >= 70: %r", overall_score, overall_score >= 70)
         if overall_score >= 70:
             lead_alert = slack_service.build_lead_alert(
                 first_name=lead_dict["first_name"],
