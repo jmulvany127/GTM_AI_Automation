@@ -7,86 +7,107 @@
   <h1>Add Lead</h1>
 </div>
 
-<div class="card lead-form-card">
-  <form id="lead-form" novalidate>
+<div class="tab-bar">
+  <button class="tab-btn tab-active" data-tab="ai" type="button">AI Parse</button>
+  <button class="tab-btn" data-tab="manual" type="button">Manual Entry</button>
+</div>
 
-    <div class="form-section">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="first_name">First Name <span class="form-required">*</span></label>
-          <input type="text" id="first_name" name="first_name" required autocomplete="given-name">
+<div class="tab-panel" id="tab-ai">
+  <div class="card lead-form-card">
+    <textarea id="ai-raw-text" class="ai-textarea" placeholder="Paste anything — a LinkedIn profile, email signature, business card, JSON, or plain text notes. The AI will extract the lead details automatically."></textarea>
+    <div class="form-actions" style="margin-top:1rem;">
+      <button type="button" id="ai-parse-btn" class="btn btn-primary">Parse Lead</button>
+    </div>
+    <div id="ai-error" class="form-error" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-manual" style="display:none;">
+  <div id="ai-banner" class="ai-banner" style="display:none;">
+    AI extracted these details — please review before saving.
+  </div>
+  <div class="card lead-form-card">
+    <form id="lead-form" novalidate>
+
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="first_name">First Name <span class="form-required">*</span></label>
+            <input type="text" id="first_name" name="first_name" required autocomplete="given-name">
+          </div>
+          <div class="form-group">
+            <label for="last_name">Last Name <span class="form-required">*</span></label>
+            <input type="text" id="last_name" name="last_name" required autocomplete="family-name">
+          </div>
         </div>
+
         <div class="form-group">
-          <label for="last_name">Last Name <span class="form-required">*</span></label>
-          <input type="text" id="last_name" name="last_name" required autocomplete="family-name">
+          <label for="email">Email <span class="form-required">*</span></label>
+          <input type="text" id="email" name="email" required autocomplete="email">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="company">Company <span class="form-optional">(optional)</span></label>
+            <input type="text" id="company" name="company" autocomplete="organization">
+          </div>
+          <div class="form-group">
+            <label for="job_title">Job Title <span class="form-optional">(optional)</span></label>
+            <input type="text" id="job_title" name="job_title" autocomplete="organization-title">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="phone">Phone <span class="form-optional">(optional)</span></label>
+            <input type="text" id="phone" name="phone" autocomplete="tel">
+          </div>
+          <div class="form-group">
+            <label for="company_website">Company Website <span class="form-optional">(optional)</span></label>
+            <input type="text" id="company_website" name="company_website" placeholder="https://...">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label for="city">City <span class="form-optional">(optional)</span></label>
+            <input type="text" id="city" name="city" autocomplete="address-level2">
+          </div>
+          <div class="form-group">
+            <label for="state">State <span class="form-optional">(optional)</span></label>
+            <input type="text" id="state" name="state" autocomplete="address-level1">
+          </div>
+          <div class="form-group">
+            <label for="country">Country <span class="form-optional">(optional)</span></label>
+            <input type="text" id="country" name="country" autocomplete="country-name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="source">Source <span class="form-optional">(optional)</span></label>
+          <input type="text" id="source" name="source" placeholder="e.g. LinkedIn, Referral, Conference">
         </div>
       </div>
 
       <div class="form-group">
-        <label for="email">Email <span class="form-required">*</span></label>
-        <input type="text" id="email" name="email" required autocomplete="email">
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="form-row">
-        <div class="form-group">
-          <label for="company">Company <span class="form-optional">(optional)</span></label>
-          <input type="text" id="company" name="company" autocomplete="organization">
-        </div>
-        <div class="form-group">
-          <label for="job_title">Job Title <span class="form-optional">(optional)</span></label>
-          <input type="text" id="job_title" name="job_title" autocomplete="organization-title">
-        </div>
+        <label for="notes">Notes <span class="form-optional">(optional)</span></label>
+        <textarea id="notes" name="notes" rows="4" placeholder="Any additional context..."></textarea>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="phone">Phone <span class="form-optional">(optional)</span></label>
-          <input type="text" id="phone" name="phone" autocomplete="tel">
-        </div>
-        <div class="form-group">
-          <label for="company_website">Company Website <span class="form-optional">(optional)</span></label>
-          <input type="text" id="company_website" name="company_website" placeholder="https://...">
-        </div>
-      </div>
-    </div>
+      <div id="form-error" class="form-error" style="display:none;"></div>
 
-    <div class="form-section">
-      <div class="form-row form-row-3">
-        <div class="form-group">
-          <label for="city">City <span class="form-optional">(optional)</span></label>
-          <input type="text" id="city" name="city" autocomplete="address-level2">
-        </div>
-        <div class="form-group">
-          <label for="state">State <span class="form-optional">(optional)</span></label>
-          <input type="text" id="state" name="state" autocomplete="address-level1">
-        </div>
-        <div class="form-group">
-          <label for="country">Country <span class="form-optional">(optional)</span></label>
-          <input type="text" id="country" name="country" autocomplete="country-name">
-        </div>
+      <div class="form-actions">
+        <a href="/dashboard/leads" class="btn btn-secondary">Cancel</a>
+        <button type="submit" id="submit-btn" class="btn btn-primary">Add Lead</button>
+        <a href="#" id="clear-form" class="clear-form-link">Clear form</a>
       </div>
 
-      <div class="form-group">
-        <label for="source">Source <span class="form-optional">(optional)</span></label>
-        <input type="text" id="source" name="source" placeholder="e.g. LinkedIn, Referral, Conference">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="notes">Notes <span class="form-optional">(optional)</span></label>
-      <textarea id="notes" name="notes" rows="4" placeholder="Any additional context..."></textarea>
-    </div>
-
-    <div id="form-error" class="form-error" style="display:none;"></div>
-
-    <div class="form-actions">
-      <a href="/dashboard/leads" class="btn btn-secondary">Cancel</a>
-      <button type="submit" id="submit-btn" class="btn btn-primary">Add Lead</button>
-    </div>
-
-  </form>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -140,6 +161,77 @@ document.getElementById('lead-form').addEventListener('submit', async function (
     btn.disabled = false;
     btn.textContent = 'Add Lead';
   }
+});
+
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+    btn.classList.add('tab-active');
+    document.getElementById('tab-' + btn.dataset.tab).style.display = '';
+  });
+});
+
+document.getElementById('ai-parse-btn').addEventListener('click', async function() {
+  const btn = this;
+  const rawText = document.getElementById('ai-raw-text').value.trim();
+  const errorEl = document.getElementById('ai-error');
+  errorEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Parsing…';
+  try {
+    const res = await fetch('/leads/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw_text: rawText })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const detail = data.detail;
+      errorEl.textContent = typeof detail === 'string' ? detail : 'Parsing failed. Please try again.';
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Parse Lead';
+      return;
+    }
+    // Prefill form
+    const fieldMap = {
+      first_name: 'first_name', last_name: 'last_name', email: 'email',
+      company: 'company', title: 'job_title', phone_number: 'phone',
+      city: 'city', state: 'state', country: 'country', notes: 'notes'
+    };
+    Object.entries(fieldMap).forEach(function([key, id]) {
+      const el = document.getElementById(id);
+      if (el && data[key] != null) el.value = data[key];
+    });
+    // Switch to manual tab
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+    document.querySelector('[data-tab="manual"]').classList.add('tab-active');
+    document.getElementById('tab-manual').style.display = '';
+    document.getElementById('ai-banner').style.display = '';
+    document.getElementById('tab-manual').scrollIntoView({ behavior: 'smooth' });
+  } catch(err) {
+    errorEl.textContent = 'Request failed: ' + err.message;
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Parse Lead';
+  }
+});
+
+document.getElementById('clear-form').addEventListener('click', function(e) {
+  e.preventDefault();
+  ['first_name','last_name','email','company','job_title','phone',
+   'company_website','city','state','country','source','notes'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('ai-raw-text').value = '';
+  document.getElementById('ai-banner').style.display = 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+  document.querySelector('[data-tab="ai"]').classList.add('tab-active');
+  document.getElementById('tab-ai').style.display = '';
 });
 </script>
 {% endblock %}
