@@ -15,7 +15,13 @@ from app.database import get_db
 
 _NOW = datetime(2026, 6, 16, 14, 0, 0)
 
+# All 10 keys returned by the unified outreach agent
 _AGENT_RESULT = {
+    "subject": "Automate your pipeline",
+    "email_body": "Hi Jane, we can help automate your sales process.",
+    "follow_up_email": "Following up on my last message.",
+    "linkedin_message": "Hi Jane, saw you are scaling sales at Acme Corp.",
+    "call_notes": "Ask about CRM setup.",
     "chosen_channel": "email",
     "agent_reasoning": "Email is best.",
     "requires_human_review": False,
@@ -35,14 +41,6 @@ _ANALYSIS_DICT = {
     "recommended_action": "Schedule call",
     "confidence_score": 0.85,
     "raw_ai_json": None,
-}
-
-_OUTREACH_DICT = {
-    "subject": "Automate your pipeline",
-    "email_body": "Hi Jane, we can help automate your sales process.",
-    "follow_up_email": "Following up on my last message.",
-    "linkedin_message": "Hi Jane, saw you are scaling sales at Acme Corp.",
-    "call_notes": "Ask about CRM setup.",
 }
 
 
@@ -76,14 +74,14 @@ def _make_analysis(**kwargs):
     return obj
 
 
-def _make_outreach(**kwargs):
+def _make_log(**kwargs):
     defaults = dict(
-        id=1, lead_id=1,
-        subject="Automate your pipeline",
-        email_body="Hi Jane, we can help automate your sales process.",
-        follow_up_email="Following up on my last message.",
-        linkedin_message="Hi Jane, saw you are scaling sales at Acme Corp.",
-        call_notes="Ask about CRM setup.",
+        id=1, lead_id=1, outreach_message_id=1,
+        chosen_channel="email",
+        agent_reasoning="Email is best.",
+        requires_human_review=False,
+        review_reason=None,
+        execution_status="sent",
         created_at=_NOW,
     )
     defaults.update(kwargs)
@@ -124,18 +122,28 @@ async def _client_with_db(mock_session):
 async def test_run_outreach_agent_returns_200_with_correct_shape():
     lead = _make_lead()
     analysis = _make_analysis()
-    outreach = _make_outreach()
+    log = _make_log()
 
     mock_db = AsyncMock()
     mock_db.execute = AsyncMock(side_effect=[
-        _scalar_result(lead),
-        _scalar_result(analysis),
-        _scalar_result(outreach),
+        _scalar_result(lead),       # 1. fetch lead
+        _scalar_result(None),       # 2. check for existing execution_log (None = no duplicate)
+        _scalar_result(analysis),   # 3. fetch analysis (inside leads.py endpoint)
+        _scalar_result(analysis),   # 4. fetch analysis inside execute_run_outreach_agent (workflow.py)
+        _scalar_result(log),        # 5. fetch log after commit (to build response)
     ])
+    mock_db.flush = AsyncMock()
+    mock_db.commit = AsyncMock()
+    mock_db.add = MagicMock()
     mock_db.refresh = AsyncMock()
 
-    with patch("app.routers.leads.run_outreach_agent", new_callable=AsyncMock) as mock_agent:
-        mock_agent.return_value = _AGENT_RESULT
+    with patch("app.routers.workflow.run_outreach_agent", new_callable=AsyncMock) as mock_agent, \
+         patch("app.routers.workflow.gmail_service.send_email") as mock_gmail, \
+         patch("app.routers.workflow.slack_service.send_alert", new_callable=AsyncMock) as mock_slack:
+
+        mock_agent.return_value = {**_AGENT_RESULT}
+        mock_gmail.return_value = True
+        mock_slack.return_value = None
 
         async with _client_with_db(mock_db) as client:
             response = await client.post("/leads/1/run-outreach-agent")
@@ -156,29 +164,28 @@ async def test_run_outreach_agent_returns_200_with_correct_shape():
 
 
 # ---------------------------------------------------------------------------
-# Test 2: POST /leads/{id}/run-outreach-agent returns 404 when outreach missing
+# Test 2: POST /leads/{id}/run-outreach-agent returns 404 when no analysis found
 # ---------------------------------------------------------------------------
 
-async def test_run_outreach_agent_returns_404_when_outreach_missing():
+async def test_run_outreach_agent_returns_404_when_analysis_missing():
     lead = _make_lead()
-    analysis = _make_analysis()
 
     mock_db = AsyncMock()
     mock_db.execute = AsyncMock(side_effect=[
-        _scalar_result(lead),
-        _scalar_result(analysis),
-        _scalar_result(None),  # no outreach
+        _scalar_result(lead),   # 1. fetch lead
+        _scalar_result(None),   # 2. check for existing execution_log (None = no duplicate)
+        _scalar_result(None),   # 3. fetch analysis → not found
     ])
 
     async with _client_with_db(mock_db) as client:
         response = await client.post("/leads/1/run-outreach-agent")
 
     assert response.status_code == 404
-    assert "outreach" in response.json()["detail"].lower()
+    assert "analysis" in response.json()["detail"].lower()
 
 
 # ---------------------------------------------------------------------------
-# Test 3: Service fallback on exception
+# Test 3: Service fallback returns all content + decision keys with requires_human_review=True
 # ---------------------------------------------------------------------------
 
 async def test_service_fallback_on_exception():
@@ -196,83 +203,193 @@ async def test_service_fallback_on_exception():
         "overall_score": 78, "confidence_score": 0.85,
         "recommended_action": "Schedule call",
     }
-    outreach_dict = {
-        "id": 1, "subject": "Automate your pipeline",
-        "email_body": "Hi Jane.",
-        "linkedin_message": "Hi Jane on LinkedIn.",
-        "follow_up_email": "Following up.",
-    }
 
     with patch("app.services.outreach_agent_service.AsyncAnthropic") as mock_cls:
         mock_client = AsyncMock()
         mock_cls.return_value = mock_client
         mock_client.messages.create = AsyncMock(side_effect=Exception("API failure"))
 
-        result = await run_outreach_agent(lead_dict, analysis_dict, outreach_dict)
+        result = await run_outreach_agent(lead_dict, analysis_dict)
 
+    # All 10 keys must be present
     assert result["fallback"] is True
-    assert result["chosen_channel"] == "email"
+    assert "subject" in result
+    assert "email_body" in result
+    assert "follow_up_email" in result
+    assert "linkedin_message" in result
+    assert "call_notes" in result
+    assert "chosen_channel" in result
+    assert "agent_reasoning" in result
+    assert "requires_human_review" in result
+    assert "review_reason" in result
+    assert "personalisation_notes" in result
     assert result["requires_human_review"] is True
+    assert result["chosen_channel"] == "deferred"
 
 
 # ---------------------------------------------------------------------------
-# Test 4: Handoff called when orchestrator executes generate_outreach
+# Test 4: Gmail is called when channel is email and requires_human_review is False
 # ---------------------------------------------------------------------------
 
-async def test_handoff_called_when_generate_outreach_executed():
-    lead = _make_lead()
-    analysis = _make_analysis()
-    outreach = _make_outreach()
+async def test_gmail_called_when_channel_is_email_and_no_review():
+    from app.routers.workflow import execute_run_outreach_agent
+
+    analysis_obj = _make_analysis(overall_score=60)
+    lead_obj = _make_lead()
 
     mock_db = AsyncMock()
-    # DB call sequence for /run-agent with ["analyze_lead", "generate_outreach"]:
-    #   1. Fetch lead (run_agent_endpoint)
-    #   2. Fetch latest_analysis for planning (run_agent_endpoint)
-    #   3. Fetch analysis inside execute_generate_outreach
-    #   4. Fetch analysis for outreach agent handoff (after generate_outreach)
-    #   5. Fetch outreach for outreach agent handoff
-    mock_db.execute = AsyncMock(side_effect=[
-        _scalar_result(lead),       # 1. fetch lead
-        _scalar_result(None),       # 2. latest_analysis for plan (None is fine — plan comes from agent mock)
-        _scalar_result(analysis),   # 3. analysis inside execute_generate_outreach
-        _scalar_result(analysis),   # 4. analysis for handoff
-        _scalar_result(outreach),   # 5. outreach for handoff
-    ])
+    mock_db.execute = AsyncMock(return_value=_scalar_result(analysis_obj))
+    mock_db.flush = AsyncMock()
+    mock_db.add = MagicMock()
 
-    plan = {
-        "actions": ["analyze_lead", "generate_outreach"],
+    agent_result = {
+        **_AGENT_RESULT,
+        "chosen_channel": "email",
         "requires_human_review": False,
-        "reasoning_summary": "Analyze then generate",
     }
 
+    with patch("app.routers.workflow.run_outreach_agent", new_callable=AsyncMock) as mock_agent, \
+         patch("app.routers.workflow.gmail_service.send_email") as mock_gmail, \
+         patch("app.routers.workflow.slack_service.send_alert", new_callable=AsyncMock) as mock_slack:
+
+        mock_agent.return_value = agent_result
+        mock_gmail.return_value = True
+        mock_slack.return_value = None
+
+        result = await execute_run_outreach_agent(lead_obj, mock_db)
+
+    mock_gmail.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Test 5: Gmail is not called when requires_human_review is True
+# ---------------------------------------------------------------------------
+
+async def test_gmail_not_called_when_requires_human_review():
+    from app.routers.workflow import execute_run_outreach_agent
+
+    analysis_obj = _make_analysis(overall_score=78)
+    lead_obj = _make_lead()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(return_value=_scalar_result(analysis_obj))
+    mock_db.flush = AsyncMock()
+    mock_db.add = MagicMock()
+
+    agent_result = {
+        **_AGENT_RESULT,
+        "chosen_channel": "email",
+        "requires_human_review": True,
+        "review_reason": "Flagged for manual review",
+    }
+
+    with patch("app.routers.workflow.run_outreach_agent", new_callable=AsyncMock) as mock_agent, \
+         patch("app.routers.workflow.gmail_service.send_email") as mock_gmail, \
+         patch("app.routers.workflow.slack_service.send_alert", new_callable=AsyncMock) as mock_slack:
+
+        mock_agent.return_value = agent_result
+        mock_gmail.return_value = True
+        mock_slack.return_value = None
+
+        result = await execute_run_outreach_agent(lead_obj, mock_db)
+
+    mock_gmail.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Test 6: Slack lead alert is called when overall_score >= 70 and not requires_human_review
+# ---------------------------------------------------------------------------
+
+async def test_slack_alert_called_when_high_score_and_no_review():
+    from app.routers.workflow import execute_run_outreach_agent
+
+    analysis_obj = _make_analysis(overall_score=80)
+    lead_obj = _make_lead()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(return_value=_scalar_result(analysis_obj))
+    mock_db.flush = AsyncMock()
+    mock_db.add = MagicMock()
+
+    agent_result = {
+        **_AGENT_RESULT,
+        "chosen_channel": "email",
+        "requires_human_review": False,
+    }
+
+    with patch("app.routers.workflow.run_outreach_agent", new_callable=AsyncMock) as mock_agent, \
+         patch("app.routers.workflow.gmail_service.send_email") as mock_gmail, \
+         patch("app.routers.workflow.slack_service.send_alert", new_callable=AsyncMock) as mock_slack, \
+         patch("app.routers.workflow.slack_service.build_lead_alert") as mock_build_alert:
+
+        mock_agent.return_value = agent_result
+        mock_gmail.return_value = True
+        mock_slack.return_value = None
+        mock_build_alert.return_value = {"text": "New lead alert"}
+
+        result = await execute_run_outreach_agent(lead_obj, mock_db)
+
+    mock_slack.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Test 7: Orchestrator dispatches run_outreach_agent as a proper declared action
+# ---------------------------------------------------------------------------
+
+async def test_orchestrator_dispatches_run_outreach_agent():
+    lead = _make_lead()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(side_effect=[
+        _scalar_result(lead),    # 1. fetch lead
+        _scalar_result(None),    # 2. check existing metrics (None = not yet run)
+        _scalar_result(None),    # 3. fetch latest_analysis for orchestrator planning
+    ])
+    mock_db.add = MagicMock()
+    mock_db.commit = AsyncMock()
+
+    plan = {
+        "actions": ["run_outreach_agent"],
+        "requires_human_review": False,
+        "reasoning_summary": "Lead is ready for outreach",
+    }
+
+    outreach_agent_result = {
+        **_AGENT_RESULT,
+        "chosen_channel": "email",
+        "requires_human_review": False,
+    }
+
+    mock_executor = AsyncMock(return_value=outreach_agent_result)
+
     with patch("app.agents.gtm_workflow_agent.AsyncAnthropic") as mock_gtm_cls, \
-         patch("app.routers.workflow.ai_service.analyze_lead", new_callable=AsyncMock) as mock_analyze, \
-         patch("app.routers.workflow.outreach_service.generate_outreach", new_callable=AsyncMock) as mock_generate, \
-         patch("app.routers.workflow.run_outreach_agent", new_callable=AsyncMock) as mock_outreach_agent:
+         patch.dict("app.routers.workflow._DISPATCH", {"run_outreach_agent": mock_executor}):
 
         mock_gtm_client = AsyncMock()
         mock_gtm_cls.return_value = mock_gtm_client
         mock_gtm_client.messages.create = AsyncMock(return_value=_agent_response(plan))
 
-        mock_analyze.return_value = _ANALYSIS_DICT
-        mock_generate.return_value = _OUTREACH_DICT
-        mock_outreach_agent.return_value = _AGENT_RESULT
-
         async with _client_with_db(mock_db) as client:
             response = await client.post("/leads/1/run-agent")
 
     assert response.status_code == 200
-    mock_outreach_agent.assert_called_once()
+    data = response.json()
+    assert "run_outreach_agent" in data["actions_executed"]
 
 
 # ---------------------------------------------------------------------------
-# Test 5: Deterministic override — personal email domain forces deferred + review
+# Test 8: Deterministic override — personal email domain forces deferred + review
 # ---------------------------------------------------------------------------
 
 async def test_deterministic_override_personal_email_forces_deferred():
     from app.services.outreach_agent_service import run_outreach_agent
 
     llm_response = {
+        "subject": "Hello",
+        "email_body": "Body text.",
+        "follow_up_email": "Follow up.",
+        "linkedin_message": "LinkedIn text.",
+        "call_notes": None,
         "chosen_channel": "both",
         "requires_human_review": False,
         "review_reason": None,
@@ -290,11 +407,6 @@ async def test_deterministic_override_personal_email_forces_deferred():
         "confidence_score": 0.9,
         "persona_type": "Champion",
     }
-    outreach_dict = {
-        "subject": "Hello",
-        "email_body": "Body text.",
-        "linkedin_message": "LinkedIn text.",
-    }
 
     with patch("app.services.outreach_agent_service.AsyncAnthropic") as mock_cls:
         mock_client = AsyncMock()
@@ -304,7 +416,7 @@ async def test_deterministic_override_personal_email_forces_deferred():
         mock_response.content[0].text = json.dumps(llm_response)
         mock_client.messages.create = AsyncMock(return_value=mock_response)
 
-        result = await run_outreach_agent(lead_dict, analysis_dict, outreach_dict)
+        result = await run_outreach_agent(lead_dict, analysis_dict)
 
     assert result["chosen_channel"] == "deferred"
     assert result["requires_human_review"] is True
