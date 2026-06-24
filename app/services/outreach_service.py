@@ -23,7 +23,7 @@ _SYSTEM_PROMPT = (
     '  "subject": "<compelling email subject line>",\n'
     '  "email_body": "<personalised cold email, under 130 words>",\n'
     '  "follow_up_email": "<shorter follow-up email, under 90 words>",\n'
-    '  "linkedin_message": "<LinkedIn connection message, under 300 characters>",\n'
+    '  "linkedin_message": "<LinkedIn connection message, strictly no more than 280 characters — complete, professional, and ready to send. Do not truncate mid-sentence. If you cannot fit a complete message in 280 characters, write a shorter complete message>",\n'
     '  "call_notes": "<suggested talking points and questions for a discovery call>"\n'
     "}\n\n"
     "All fields are required. Return only JSON, nothing else."
@@ -63,7 +63,7 @@ async def generate_outreach(lead, analysis) -> dict:
         try:
             response = await client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=1024,
+                max_tokens=1500,
                 system=_SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_message}],
             )

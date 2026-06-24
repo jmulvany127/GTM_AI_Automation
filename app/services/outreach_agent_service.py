@@ -117,7 +117,7 @@ async def run_outreach_agent(lead: dict, analysis: dict, outreach: dict) -> dict
         f"Email Subject: {outreach.get('subject') or 'Not generated'}\n"
         f"Email Body: {'Yes' if outreach.get('email_body') else 'No'}\n"
         f"Follow-up Email: {'Yes' if outreach.get('follow_up_email') else 'No'}\n"
-        f"LinkedIn Message: {'Yes — ' + linkedin_message[:80] if linkedin_message else 'No — LinkedIn message is missing or empty'}\n"
+        f"LinkedIn Message: {'Yes — ' + linkedin_message if linkedin_message else 'No — LinkedIn message is missing or empty'}\n"
         f"Call Notes: {'Yes' if outreach.get('call_notes') else 'No'}\n"
     )
 
