@@ -177,6 +177,8 @@ tbody td {
 .badge-action-required {
   background-color: #f59e0b;
   color: #ffffff;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.45rem;
 }
 
 /* Buttons */
