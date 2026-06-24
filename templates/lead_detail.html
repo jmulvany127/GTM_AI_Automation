@@ -97,33 +97,23 @@
 <!-- Section 3: Outreach -->
 <div class="card">
   <div class="card-header">Outreach</div>
-  {% if outreach %}
-  <div class="detail-grid">
-    <span class="detail-label">Subject</span>
-    <span class="detail-value">{{ outreach.subject or "—" }}</span>
-
-    <span class="detail-label">Email Body</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.email_body or "—" }}</span>
-
-    <span class="detail-label">Follow-up Email</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.follow_up_email or "—" }}</span>
-
-    <span class="detail-label">LinkedIn Message</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.linkedin_message or "—" }}</span>
-
-    <span class="detail-label">Call Notes</span>
-    <span class="detail-value" style="white-space:pre-wrap;">{{ outreach.call_notes or "—" }}</span>
-  </div>
-  {% else %}
-  <p class="card-empty">No outreach generated yet.</p>
-  {% endif %}
-</div>
-
-<!-- Section 3b: Outreach Agent Decision -->
-<div class="card">
-  <div class="card-header">Outreach Agent Decision</div>
   {% if execution_log %}
   <div class="detail-grid">
+    <span class="detail-label">Subject</span>
+    <span class="detail-value">{% if outreach %}{{ outreach.subject or "—" }}{% else %}—{% endif %}</span>
+
+    <span class="detail-label">Email Body</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{% if outreach %}{{ outreach.email_body or "—" }}{% else %}—{% endif %}</span>
+
+    <span class="detail-label">Follow-up Email</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{% if outreach %}{{ outreach.follow_up_email or "—" }}{% else %}—{% endif %}</span>
+
+    <span class="detail-label">LinkedIn Message</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{% if outreach %}{{ outreach.linkedin_message or "—" }}{% else %}—{% endif %}</span>
+
+    <span class="detail-label">Call Notes</span>
+    <span class="detail-value" style="white-space:pre-wrap;">{% if outreach %}{{ outreach.call_notes or "—" }}{% else %}—{% endif %}</span>
+
     <span class="detail-label">Channel</span>
     <span class="detail-value">{{ execution_log.chosen_channel or "—" }}</span>
 
@@ -150,13 +140,29 @@
     <span class="detail-label">Decided At</span>
     <span class="detail-value">{{ execution_log.created_at.strftime("%Y-%m-%d %H:%M") if execution_log.created_at else "—" }}</span>
   </div>
-  {% elif outreach %}
+
+  {% if execution_log.chosen_channel in ("linkedin", "both") and execution_log.execution_status == "linkedin_pending" %}
+  <div class="card" style="margin-top:1rem;border-left:4px solid #3182ce;background:#ebf8ff;padding:1rem;">
+    <div class="card-header-text" style="font-weight:700;color:#2b6cb0;margin-bottom:0.5rem;">Manual LinkedIn Action Required</div>
+    <p style="margin-bottom:0.5rem;color:#2c5282;">Copy the message below and send it manually via LinkedIn:</p>
+    <textarea
+      id="linkedin-msg-{{ lead.id }}"
+      readonly
+      style="width:100%;min-height:6rem;padding:0.5rem;border:1px solid #bee3f8;border-radius:4px;resize:vertical;"
+    >{% if outreach %}{{ outreach.linkedin_message or "" }}{% endif %}</textarea>
+    <button
+      class="btn btn-primary"
+      style="margin-top:0.5rem;"
+      onclick="copyToClipboard('linkedin-msg-{{ lead.id }}')"
+    >Copy to Clipboard</button>
+  </div>
+  {% endif %}
+
+  {% else %}
   <p class="card-empty">
-    Outreach generated but no agent decision yet.
+    No outreach generated yet.
     <button class="btn btn-primary" id="run-outreach-btn-{{ lead.id }}" onclick="runOutreachAgent({{ lead.id }}, this)">Run Outreach Agent</button>
   </p>
-  {% else %}
-  <p class="card-empty">No outreach generated yet.</p>
   {% endif %}
 </div>
 
@@ -269,6 +275,12 @@ async function runOutreachAgent(leadId, btn) {
     btn.disabled = false;
     btn.textContent = original;
   }
+}
+
+function copyToClipboard(id) {
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand('copy');
 }
 </script>
 {% endblock %}
