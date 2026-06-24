@@ -206,6 +206,29 @@ tbody td {
   cursor: not-allowed;
 }
 
+.btn-success {
+  background-color: #38a169;
+  color: #fff;
+}
+
+.btn-success:hover {
+  background-color: #276749;
+}
+
+.btn-success:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.linkedin-confirm {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #276749;
+  margin-top: 0.6rem;
+  opacity: 1;
+  transition: opacity 1s ease;
+}
+
 .btn-secondary {
   background-color: #e2e8f0;
   color: #2d3748;
