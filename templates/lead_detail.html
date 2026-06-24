@@ -49,7 +49,7 @@
 
     <span class="detail-label">Status</span>
     <span class="detail-value">
-      <span class="badge badge-{{ lead.status }}">{{ lead.status }}</span>
+      <span id="lead-status-badge" class="badge badge-{{ lead.status }}">{{ lead.status }}</span>
     </span>
 
     <span class="detail-label">Created</span>
@@ -100,7 +100,7 @@
   {% if execution_log %}
 
   {% if execution_log.execution_status == "pending_manual" %}
-  <div style="margin-bottom:1.25rem;padding:1rem 1.25rem;border-radius:6px;border-left:5px solid #f59e0b;background:#fffbeb;">
+  <div id="linkedin-callout-{{ lead.id }}" style="margin-bottom:1.25rem;padding:1rem 1.25rem;border-radius:6px;border-left:5px solid #f59e0b;background:#fffbeb;">
     <div style="font-weight:700;color:#b45309;font-size:1rem;margin-bottom:0.5rem;">⚠️ Action Required — LinkedIn Message Pending Manual Send</div>
     <p style="color:#78350f;margin-bottom:0.75rem;">This lead requires a manual LinkedIn message. Copy the message below and send it directly from your LinkedIn account.</p>
     <textarea
@@ -108,12 +108,20 @@
       readonly
       style="width:100%;min-height:6rem;padding:0.65rem;border:1px solid #fcd34d;border-radius:4px;background:#fefce8;color:#1a202c;font-size:0.9rem;resize:vertical;"
     >{% if outreach %}{{ outreach.linkedin_message or "" }}{% endif %}</textarea>
-    <button
-      class="btn btn-primary"
-      id="copy-btn-{{ lead.id }}"
-      style="margin-top:0.6rem;background:#f59e0b;color:#fff;"
-      onclick="copyLinkedInMessage('linkedin-msg-{{ lead.id }}', 'copy-btn-{{ lead.id }}')"
-    >Copy to Clipboard</button>
+    <div style="margin-top:0.6rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <button
+        class="btn btn-primary"
+        id="copy-btn-{{ lead.id }}"
+        style="background:#f59e0b;color:#fff;"
+        onclick="copyLinkedInMessage('linkedin-msg-{{ lead.id }}', 'copy-btn-{{ lead.id }}')"
+      >Copy to Clipboard</button>
+      <button
+        class="btn btn-success"
+        id="mark-sent-btn-{{ lead.id }}"
+        onclick="markLinkedInSent({{ lead.id }}, 'linkedin-callout-{{ lead.id }}')"
+      >Mark as Sent</button>
+    </div>
+    <div id="linkedin-error-{{ lead.id }}" class="form-error" style="display:none;margin-top:0.5rem;"></div>
     <p style="margin-top:0.75rem;font-size:0.82rem;color:#92400e;">Once sent, this is logged automatically via your outreach execution record.</p>
   </div>
   {% endif %}
@@ -277,6 +285,41 @@ async function runOutreachAgent(leadId, btn) {
     alert('Request failed: ' + err.message);
     btn.disabled = false;
     btn.textContent = original;
+  }
+}
+
+async function markLinkedInSent(leadId, calloutId) {
+  const btn = document.getElementById('mark-sent-btn-' + leadId);
+  const errEl = document.getElementById('linkedin-error-' + leadId);
+  btn.disabled = true;
+  btn.textContent = 'Marking…';
+  if (errEl) errEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/leads/' + leadId + '/mark-linkedin-sent', { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (errEl) { errEl.textContent = data.detail || 'Request failed'; errEl.style.display = 'block'; }
+      btn.disabled = false;
+      btn.textContent = 'Mark as Sent';
+      return;
+    }
+
+    const badge = document.getElementById('lead-status-badge');
+    if (badge) { badge.className = 'badge badge-contacted'; badge.textContent = 'contacted'; }
+
+    const callout = document.getElementById(calloutId);
+    const confirm = document.createElement('p');
+    confirm.className = 'linkedin-confirm';
+    confirm.textContent = '✓ LinkedIn message marked as sent';
+    if (callout) { callout.parentNode.insertBefore(confirm, callout); callout.remove(); }
+
+    setTimeout(() => { confirm.style.opacity = '0'; }, 2000);
+    setTimeout(() => { if (confirm.parentNode) confirm.remove(); }, 3000);
+  } catch (err) {
+    if (errEl) { errEl.textContent = 'Request failed: ' + err.message; errEl.style.display = 'block'; }
+    btn.disabled = false;
+    btn.textContent = 'Mark as Sent';
   }
 }
 
