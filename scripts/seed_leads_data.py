@@ -9,7 +9,7 @@ SEED_LEADS = [
         "city": "Austin",
         "state": "TX",
         "country": "United States",
-        "status": "analyzed",
+        "status": "new",
         "notes": "Manages a portfolio of 8,200 units across Central Texas; currently using a manual spreadsheet-based leasing pipeline and mentioned she's losing deals because follow-up times are too slow. Expressed strong interest in automating lead qualification.",
     },
     {
@@ -48,7 +48,7 @@ SEED_LEADS = [
         "city": "Atlanta",
         "state": "GA",
         "country": "United States",
-        "status": "contacted",
+        "status": "new",
         "notes": "Nonprofit managing 3,100 affordable housing units across Georgia; tight budget constraints but significant pressure from board to improve leasing velocity. Mentioned they are exploring grant-funded technology initiatives to offset software costs.",
     },
     {
@@ -61,7 +61,7 @@ SEED_LEADS = [
         "city": "Seattle",
         "state": "WA",
         "country": "United States",
-        "status": "analyzed",
+        "status": "new",
         "notes": "PropTech operator running a tech-enabled property management platform; their internally built lead routing system is struggling to scale past 2,000 concurrent leads. Wants to evaluate off-the-shelf AI orchestration before committing to further in-house development.",
     },
     {
@@ -87,7 +87,7 @@ SEED_LEADS = [
         "city": "Denver",
         "state": "CO",
         "country": "United States",
-        "status": "contacted",
+        "status": "new",
         "notes": "Senior living operator with 18 communities and 2,800 units; family-facing inquiries require high-touch follow-up and the team is dropping leads during peak inquiry windows. Mentioned that automating initial outreach drafts would free up counselors for high-value conversations.",
     },
     {
@@ -113,7 +113,7 @@ SEED_LEADS = [
         "city": "New York",
         "state": "NY",
         "country": "United States",
-        "status": "analyzed",
+        "status": "new",
         "notes": "REIT with 14,500 units in coastal markets including NYC, Boston, and Miami; asset management team evaluates vendor tools on a 12-month budget cycle. VP noted they recently renewed their Entrata contract but have flexibility to add point solutions for AI-driven leasing intelligence.",
     },
     {
@@ -139,7 +139,7 @@ SEED_LEADS = [
         "city": "Tampa",
         "state": "FL",
         "country": "United States",
-        "status": "contacted",
+        "status": "new",
         "notes": "Third-party property management firm overseeing 6,800 units for 12 owner clients; clients are requesting AI-enhanced reporting and leasing performance dashboards. Director is under contract renewal pressure and positioning new tech adoption as a differentiator.",
     },
     {
@@ -178,7 +178,7 @@ SEED_LEADS = [
         "city": "Houston",
         "state": "TX",
         "country": "United States",
-        "status": "analyzed",
+        "status": "new",
         "notes": "Full-service property management company with 9,100 units across Texas and Oklahoma; Director is midway through a two-year digital transformation roadmap. Has already implemented RealPage AI Pricing but identified leasing workflow automation as the next major initiative.",
     },
     {
@@ -217,7 +217,7 @@ SEED_LEADS = [
         "city": "San Diego",
         "state": "CA",
         "country": "United States",
-        "status": "contacted",
+        "status": "new",
         "notes": "Property management arm of a coastal California real estate firm with 4,700 units; Director oversees all resident acquisition marketing and is frustrated with low email open rates from generic outreach templates. Wants AI-personalized messaging at the unit and neighborhood level.",
     },
     {
@@ -243,7 +243,7 @@ SEED_LEADS = [
         "city": "Las Vegas",
         "state": "NV",
         "country": "United States",
-        "status": "analyzed",
+        "status": "new",
         "notes": "Property management firm operating 6,200 units across Nevada and Utah; Head of PropTech oversees vendor selection and recently decommissioned AppFolio in favor of Yardi. Evaluating AI leasing assistants and wants API-first platforms that integrate with their existing stack.",
     },
     {
