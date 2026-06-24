@@ -8,6 +8,23 @@
   <a href="/dashboard/leads/new" class="btn btn-primary">Add Lead</a>
 </div>
 
+<div class="filter-bar">
+  <input type="text" id="filter-search" placeholder="Search by name, company or title…">
+  <select id="filter-location">
+    <option value="">All locations</option>
+  </select>
+  <div class="filter-date-group">
+    <label class="filter-bar-label" for="filter-from">Added from</label>
+    <input type="date" id="filter-from">
+  </div>
+  <div class="filter-date-group">
+    <label class="filter-bar-label" for="filter-to">Added to</label>
+    <input type="date" id="filter-to">
+  </div>
+  <button class="btn btn-secondary" id="filter-clear" type="button">Clear filters</button>
+</div>
+<p class="filter-results" id="filter-results"></p>
+
 <div class="table-wrapper">
   <table class="leads-table">
     <thead>
@@ -96,5 +113,99 @@ async function runAgent(leadId, btn) {
     btn.textContent = original;
   }
 }
+
+(function () {
+  var tbody = document.querySelector('.leads-table tbody');
+  var rows = Array.from(tbody.querySelectorAll('tr[data-name]'));
+  var searchInput = document.getElementById('filter-search');
+  var locationSelect = document.getElementById('filter-location');
+  var fromInput = document.getElementById('filter-from');
+  var toInput = document.getElementById('filter-to');
+  var clearBtn = document.getElementById('filter-clear');
+  var resultsEl = document.getElementById('filter-results');
+
+  function toTitleCase(str) {
+    return str.replace(/\S+/g, function (w) {
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    });
+  }
+
+  // Populate location dropdown from unique city+state pairs in the table
+  var seen = {};
+  var locations = [];
+  rows.forEach(function (row) {
+    var city = row.dataset.city || '';
+    var state = row.dataset.state || '';
+    var key = city + '|' + state;
+    if (!seen[key] && (city || state)) {
+      seen[key] = true;
+      var parts = [];
+      if (city) parts.push(toTitleCase(city));
+      if (state) parts.push(state.toUpperCase());
+      locations.push({ label: parts.join(', '), key: key });
+    }
+  });
+  locations.sort(function (a, b) { return a.label.localeCompare(b.label); });
+  locations.forEach(function (loc) {
+    var opt = document.createElement('option');
+    opt.value = loc.key;
+    opt.textContent = loc.label;
+    locationSelect.appendChild(opt);
+  });
+
+  function applyFilters() {
+    var search = searchInput.value.toLowerCase().trim();
+    var locValue = locationSelect.value;
+    var fromDate = fromInput.value;
+    var toDate = toInput.value;
+    var locParts = locValue ? locValue.split('|') : null;
+    var locCity = locParts ? (locParts[0] || '') : '';
+    var locState = locParts ? (locParts[1] || '') : '';
+
+    var visible = 0;
+    rows.forEach(function (row) {
+      var show = true;
+
+      if (search) {
+        var name = row.dataset.name || '';
+        var company = row.dataset.company || '';
+        var title = row.dataset.title || '';
+        if (name.indexOf(search) === -1 && company.indexOf(search) === -1 && title.indexOf(search) === -1) {
+          show = false;
+        }
+      }
+
+      if (locValue) {
+        if ((row.dataset.city || '') !== locCity || (row.dataset.state || '') !== locState) {
+          show = false;
+        }
+      }
+
+      var created = row.dataset.created || '';
+      if (fromDate && created && created < fromDate) show = false;
+      if (toDate && created && created > toDate) show = false;
+
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    resultsEl.textContent = 'Showing ' + visible + ' of ' + rows.length + ' leads';
+  }
+
+  searchInput.addEventListener('input', applyFilters);
+  locationSelect.addEventListener('change', applyFilters);
+  fromInput.addEventListener('change', applyFilters);
+  toInput.addEventListener('change', applyFilters);
+
+  clearBtn.addEventListener('click', function () {
+    searchInput.value = '';
+    locationSelect.value = '';
+    fromInput.value = '';
+    toInput.value = '';
+    applyFilters();
+  });
+
+  applyFilters();
+})();
 </script>
 {% endblock %}
