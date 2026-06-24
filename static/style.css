@@ -113,8 +113,8 @@ thead th {
 .leads-table th:nth-child(3) { width: 19%; } /* Email */
 .leads-table th:nth-child(4) { width: 14%; } /* Title */
 .leads-table th:nth-child(5) { width: 11%; } /* Location */
-.leads-table th:nth-child(6) { width: 12%; } /* Status */
-.leads-table th:nth-child(7) { width: 5%;  } /* Score */
+.leads-table th:nth-child(6) { width: 11%; } /* Status */
+.leads-table th:nth-child(7) { width: 6%;  } /* Score */
 .leads-table th:nth-child(8) { width: 10%; } /* Actions */
 
 /* Truncate overflowing text in leads table cells */
