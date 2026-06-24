@@ -9,7 +9,6 @@ from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models.lead import Lead
 from app.models.analysis import LeadAnalysis
-from app.models.outreach import OutreachMessage
 from app.models.outreach_execution_log import OutreachExecutionLog
 from app.schemas.lead import LeadCreate, LeadRead, LeadUpdate
 from app.routers.workflow import execute_run_outreach_agent
@@ -126,19 +125,19 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
     if analysis is None:
         raise HTTPException(status_code=404, detail="No analysis found for this lead")
 
-    # Fetch most recent outreach message
-    outreach_result = await db.execute(
-        select(OutreachMessage)
-        .where(OutreachMessage.lead_id == lead_id)
-        .order_by(OutreachMessage.created_at.desc())
+    await execute_run_outreach_agent(lead, db)
+    await db.commit()
+
+    # Fetch the most recently created log for this lead to build the response
+    log_result = await db.execute(
+        select(OutreachExecutionLog)
+        .where(OutreachExecutionLog.lead_id == lead_id)
+        .order_by(OutreachExecutionLog.created_at.desc())
         .limit(1)
     )
-    outreach = outreach_result.scalar_one_or_none()
-    if outreach is None:
-        raise HTTPException(status_code=404, detail="No outreach message found for this lead")
-
-    log, _ = await execute_run_outreach_agent(lead, analysis, outreach, db)
-    await db.commit()
+    log = log_result.scalar_one_or_none()
+    if log is None:
+        raise HTTPException(status_code=500, detail="Execution log not found after commit")
     await db.refresh(log)
 
     return {

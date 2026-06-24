@@ -19,7 +19,7 @@ _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
 
 _ALLOWED_ACTIONS = {
     "analyze_lead",
-    "generate_outreach",
+    "run_outreach_agent",
     "sync_hubspot",
     "create_hubspot_task",
     "mark_needs_review",
@@ -51,14 +51,14 @@ Given a lead and optional analysis data, produce a JSON workflow plan specifying
 - If the lead email domain is personal (gmail.com, hotmail.com, yahoo.com, outlook.com): include mark_needs_review and do NOT include sync_hubspot
 - If company or job_title is missing: include mark_needs_review
 - If no analysis is provided: include analyze_lead as the first action
-- If overall_score >= 75: include generate_outreach and sync_hubspot
+- If overall_score >= 75: include run_outreach_agent and sync_hubspot
 - If overall_score >= 85: also include create_hubspot_task
 - If confidence_score < 0.6: include mark_needs_review
-- Never include both skip_outreach and generate_outreach
+- Never include both skip_outreach and run_outreach_agent
 
 ## Allowed Actions (use ONLY these — any other action will be rejected)
 - analyze_lead
-- generate_outreach
+- run_outreach_agent — generates personalised outreach content, decides the best channel, and executes sending. Use this when the lead warrants outreach.
 - sync_hubspot
 - create_hubspot_task
 - mark_needs_review
