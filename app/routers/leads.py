@@ -136,6 +136,8 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
         .limit(1)
     )
     log = log_result.scalar_one_or_none()
+    if log is None:
+        raise HTTPException(status_code=500, detail="Execution log not found after commit")
     await db.refresh(log)
 
     return {
