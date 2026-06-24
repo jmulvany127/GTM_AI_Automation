@@ -20,9 +20,9 @@ services:
     env_file:
       - .env
     environment:
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
-      - GMAIL_SENDER_ADDRESS=${GMAIL_SENDER_ADDRESS:-}
-      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD:-}
+      - SLACK_WEBHOOK_URL
+      - GMAIL_SENDER_ADDRESS
+      - GMAIL_APP_PASSWORD
     depends_on:
       db:
         condition: service_healthy

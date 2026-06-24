@@ -18,16 +18,15 @@ _SMTP_PORT = 465
 
 
 def send_email(to_address: str, subject: str, body: str) -> bool:
-    sender = os.getenv("GMAIL_SENDER_ADDRESS", "")
+    sender = os.getenv("GMAIL_SENDER_ADDRESS", "").strip()
     app_password = os.getenv("GMAIL_APP_PASSWORD", "")
-    _logger.warning(
-        "[DEBUG] gmail_service: GMAIL_SENDER_ADDRESS present=%r len=%d  GMAIL_APP_PASSWORD present=%r",
-        bool(sender),
-        len(sender),
-        bool(app_password),
-    )
     if not sender or not app_password:
-        _logger.warning("[DEBUG] gmail_service: env vars missing — sender_present=%r password_present=%r — aborting", bool(sender), bool(app_password))
+        _logger.error(
+            "gmail_service: cannot send — GMAIL_SENDER_ADDRESS present=%r GMAIL_APP_PASSWORD present=%r; "
+            "check env vars are set in .env and not overridden with empty values",
+            bool(sender),
+            bool(app_password),
+        )
         return False
 
     try:

@@ -8,9 +8,11 @@ _logger = logging.getLogger(__name__)
 
 async def send_alert(message: str) -> bool:
     webhook_url = os.getenv("SLACK_WEBHOOK_URL", "")
-    _logger.warning("[DEBUG] slack_service: SLACK_WEBHOOK_URL present=%r len=%d", bool(webhook_url), len(webhook_url))
     if not webhook_url:
-        _logger.warning("[DEBUG] slack_service: SLACK_WEBHOOK_URL not set — aborting send")
+        _logger.error(
+            "slack_service: cannot send — SLACK_WEBHOOK_URL is not set; "
+            "check env vars are set in .env and not overridden with empty values"
+        )
         return False
 
     try:
