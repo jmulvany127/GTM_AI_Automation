@@ -366,6 +366,6 @@ The current system covers the core GTM pipeline end-to-end. These are genuine ex
 
 ## Author
 
-Built by James Mulvany
+Built by Joe Mulvany
 GTM Engineer | New York
 GitHub: [github.com/jmulvany127](https://github.com/jmulvany127)
