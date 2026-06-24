@@ -2,13 +2,37 @@ import json
 import logging
 import re
 from anthropic import AsyncAnthropic
-from app.config import get_settings
+from app.config import (
+    get_settings,
+    COMPANY_NAME,
+    COMPANY_LOCATION,
+    COMPANY_DESCRIPTION,
+    PRODUCT_DESCRIPTION,
+    VALUE_PROPOSITION,
+    TARGET_CUSTOMER,
+    KEY_PAIN_POINTS_WE_SOLVE,
+)
 
 _logger = logging.getLogger(__name__)
 
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
 
-_SYSTEM_PROMPT = """You are a B2B outreach channel and timing decision agent for a Go-To-Market automation platform.
+_SYSTEM_PROMPT = f"""You are the outreach channel and timing decision agent for {COMPANY_NAME}, {COMPANY_LOCATION}.
+
+ABOUT THE COMPANY:
+{COMPANY_DESCRIPTION}
+
+PRODUCT:
+{PRODUCT_DESCRIPTION}
+
+VALUE PROPOSITION:
+{VALUE_PROPOSITION}
+
+IDEAL CUSTOMER PROFILE:
+{TARGET_CUSTOMER}
+
+PAIN POINTS WE SOLVE:
+{KEY_PAIN_POINTS_WE_SOLVE}
 
 Your role is ONLY to decide which communication channel(s) to use for a lead and whether human review is needed.
 You do NOT write outreach content — content has already been generated. You decide the execution strategy.
@@ -40,13 +64,13 @@ If a LinkedIn message is present and non-empty, treat it as complete.
 
 ## Output Format
 Return ONLY a valid JSON object — no explanation, no markdown fences:
-{
+{{
   "chosen_channel": "<email|linkedin|both|deferred>",
   "agent_reasoning": "<brief explanation of why this channel and review status was chosen>",
   "requires_human_review": false,
   "review_reason": "<null if no review needed, or brief reason>",
   "personalisation_notes": "<optional notes on timing, tone, or approach — null if none>"
-}"""
+}}"""
 
 _FALLBACK: dict = {
     "chosen_channel": "email",
