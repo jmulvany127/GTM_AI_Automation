@@ -1,6 +1,6 @@
 import time
 import httpx
-from app.config import USER_FULL_NAME, USER_EMAIL
+from app.config import USER_FULL_NAME, USER_EMAIL, COMPANY_NAME, SENDER_TITLE
 
 _BASE = "https://api.hubapi.com"
 
@@ -98,7 +98,7 @@ async def create_note(token: str, contact_id: str, analysis, outreach) -> str:
             f"Email Subject: {outreach.subject or 'N/A'}",
             f"Email Body: {outreach.email_body or 'N/A'}",
         ]
-    lines.append(f"\nSynced by: {USER_FULL_NAME} ({USER_EMAIL}) via GTM AI OS")
+    lines.append(f"\nSynced by: {USER_FULL_NAME} ({USER_EMAIL}) | {SENDER_TITLE} at {COMPANY_NAME} | via Domino AI GTM OS")
     body = "\n".join(lines)
 
     payload = {
@@ -125,7 +125,7 @@ async def create_note(token: str, contact_id: str, analysis, outreach) -> str:
 
 
 async def create_call_note(token: str, contact_id: str, note_body: str) -> str:
-    note_body = f"{note_body}\n\nSynced by: {USER_FULL_NAME} ({USER_EMAIL}) via GTM AI OS"
+    note_body = f"{note_body}\n\nSynced by: {USER_FULL_NAME} ({USER_EMAIL}) | {SENDER_TITLE} at {COMPANY_NAME} | via Domino AI GTM OS"
     payload = {
         "properties": {
             "hs_note_body": note_body,
