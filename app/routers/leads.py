@@ -97,6 +97,33 @@ async def delete_lead(lead_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Cannot delete lead with associated records")
 
 
+@router.post("/{lead_id}/mark-linkedin-sent", status_code=status.HTTP_200_OK)
+async def mark_linkedin_sent(lead_id: int, db: AsyncSession = Depends(get_db)):
+    lead_result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = lead_result.scalar_one_or_none()
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    log_result = await db.execute(
+        select(OutreachExecutionLog)
+        .where(OutreachExecutionLog.lead_id == lead_id)
+        .order_by(OutreachExecutionLog.created_at.desc())
+        .limit(1)
+    )
+    log = log_result.scalar_one_or_none()
+    if log is None:
+        raise HTTPException(status_code=404, detail="No outreach execution log found for this lead")
+
+    if log.execution_status != "pending_manual":
+        raise HTTPException(status_code=400, detail="LinkedIn action is not currently pending for this lead")
+
+    log.execution_status = "sent"
+    lead.status = "contacted"
+    await db.commit()
+
+    return {"message": "LinkedIn marked as sent", "lead_status": "contacted", "execution_status": "sent"}
+
+
 @router.post("/{lead_id}/run-outreach-agent", status_code=status.HTTP_200_OK)
 async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
     # Fetch lead
