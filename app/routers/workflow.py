@@ -185,11 +185,50 @@ async def execute_run_outreach_agent(lead, db: AsyncSession) -> dict:
                 "LinkedIn sending not yet automated for lead %s — manual action required",
                 lead.id,
             )
-            if new_status == "pending":
-                new_status = "linkedin_pending"
+            new_status = "pending_manual"
+            lead.status = "action_required"
 
         log.execution_status = new_status
         await db.flush()
+
+        if chosen_channel in ("linkedin", "both"):
+            lead_url = f"http://localhost:8000/dashboard/leads/{lead.id}"
+            linkedin_notified = await slack_service.send_linkedin_action_required(
+                lead={**lead_dict, "overall_score": overall_score, "title": lead_dict.get("job_title", "")},
+                linkedin_message=agent_result.get("linkedin_message") or "",
+                lead_url=lead_url,
+            )
+            _logger.info(
+                "LinkedIn action required Slack notification for lead %s: %s",
+                lead.id,
+                "sent" if linkedin_notified else "failed",
+            )
+
+            crm_sync_result = await db.execute(
+                select(CrmSyncLog)
+                .where(CrmSyncLog.lead_id == lead.id, CrmSyncLog.sync_status == "success")
+                .order_by(CrmSyncLog.created_at.desc())
+                .limit(1)
+            )
+            crm_sync_log = crm_sync_result.scalar_one_or_none()
+            if crm_sync_log and crm_sync_log.external_contact_id:
+                token = get_settings().HUBSPOT_ACCESS_TOKEN
+                if token:
+                    try:
+                        task_id = await hubspot_service.create_task(
+                            token=token,
+                            contact_id=crm_sync_log.external_contact_id,
+                            subject="Send LinkedIn message — Domino AI GTM OS",
+                            body=agent_result.get("linkedin_message") or "",
+                            due_date_ms=int(time.time() * 1000),
+                        )
+                        _logger.info("HubSpot task created for lead %s: task_id=%s", lead.id, task_id)
+                    except Exception as exc:
+                        _logger.error("HubSpot task creation failed for lead %s: %s", lead.id, exc)
+                else:
+                    _logger.info("Skipping HubSpot task for lead %s — HUBSPOT_ACCESS_TOKEN not set", lead.id)
+            else:
+                _logger.info("Skipping HubSpot task for lead %s — no successful CRM sync found", lead.id)
 
         if overall_score >= 70:
             lead_alert = slack_service.build_lead_alert(

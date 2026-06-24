@@ -98,6 +98,26 @@
 <div class="card">
   <div class="card-header">Outreach</div>
   {% if execution_log %}
+
+  {% if execution_log.execution_status == "pending_manual" %}
+  <div style="margin-bottom:1.25rem;padding:1rem 1.25rem;border-radius:6px;border-left:5px solid #f59e0b;background:#fffbeb;">
+    <div style="font-weight:700;color:#b45309;font-size:1rem;margin-bottom:0.5rem;">⚠️ Action Required — LinkedIn Message Pending Manual Send</div>
+    <p style="color:#78350f;margin-bottom:0.75rem;">This lead requires a manual LinkedIn message. Copy the message below and send it directly from your LinkedIn account.</p>
+    <textarea
+      id="linkedin-msg-{{ lead.id }}"
+      readonly
+      style="width:100%;min-height:6rem;padding:0.65rem;border:1px solid #fcd34d;border-radius:4px;background:#fefce8;color:#1a202c;font-size:0.9rem;resize:vertical;"
+    >{% if outreach %}{{ outreach.linkedin_message or "" }}{% endif %}</textarea>
+    <button
+      class="btn btn-primary"
+      id="copy-btn-{{ lead.id }}"
+      style="margin-top:0.6rem;background:#f59e0b;color:#fff;"
+      onclick="copyLinkedInMessage('linkedin-msg-{{ lead.id }}', 'copy-btn-{{ lead.id }}')"
+    >Copy to Clipboard</button>
+    <p style="margin-top:0.75rem;font-size:0.82rem;color:#92400e;">Once sent, this is logged automatically via your outreach execution record.</p>
+  </div>
+  {% endif %}
+
   <div class="detail-grid">
     <span class="detail-label">Subject</span>
     <span class="detail-value">{% if outreach %}{{ outreach.subject or "—" }}{% else %}—{% endif %}</span>
@@ -140,23 +160,6 @@
     <span class="detail-label">Decided At</span>
     <span class="detail-value">{{ execution_log.created_at.strftime("%Y-%m-%d %H:%M") if execution_log.created_at else "—" }}</span>
   </div>
-
-  {% if execution_log.chosen_channel in ("linkedin", "both") and execution_log.execution_status == "linkedin_pending" %}
-  <div class="card" style="margin-top:1rem;border-left:4px solid #3182ce;background:#ebf8ff;padding:1rem;">
-    <div class="card-header-text" style="font-weight:700;color:#2b6cb0;margin-bottom:0.5rem;">Manual LinkedIn Action Required</div>
-    <p style="margin-bottom:0.5rem;color:#2c5282;">Copy the message below and send it manually via LinkedIn:</p>
-    <textarea
-      id="linkedin-msg-{{ lead.id }}"
-      readonly
-      style="width:100%;min-height:6rem;padding:0.5rem;border:1px solid #bee3f8;border-radius:4px;resize:vertical;"
-    >{% if outreach %}{{ outreach.linkedin_message or "" }}{% endif %}</textarea>
-    <button
-      class="btn btn-primary"
-      style="margin-top:0.5rem;"
-      onclick="copyToClipboard('linkedin-msg-{{ lead.id }}')"
-    >Copy to Clipboard</button>
-  </div>
-  {% endif %}
 
   {% else %}
   <p class="card-empty">
@@ -277,10 +280,19 @@ async function runOutreachAgent(leadId, btn) {
   }
 }
 
-function copyToClipboard(id) {
-  const el = document.getElementById(id);
-  el.select();
-  document.execCommand('copy');
+async function copyLinkedInMessage(textareaId, btnId) {
+  const el = document.getElementById(textareaId);
+  const btn = document.getElementById(btnId);
+  try {
+    await navigator.clipboard.writeText(el.value);
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy to Clipboard'; }, 2000);
+  } catch (err) {
+    el.select();
+    document.execCommand('copy');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy to Clipboard'; }, 2000);
+  }
 }
 </script>
 {% endblock %}

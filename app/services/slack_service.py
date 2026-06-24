@@ -6,6 +6,42 @@ import httpx
 _logger = logging.getLogger(__name__)
 
 
+async def send_linkedin_action_required(lead: dict, linkedin_message: str, lead_url: str) -> bool:
+    webhook_url = os.getenv("SLACK_WEBHOOK_URL", "")
+    if not webhook_url:
+        _logger.error(
+            "slack_service: cannot send LinkedIn alert — SLACK_WEBHOOK_URL is not set"
+        )
+        return False
+
+    first_name = lead.get("first_name", "")
+    last_name = lead.get("last_name", "")
+    company = lead.get("company", "")
+    title = lead.get("job_title") or lead.get("title", "")
+    score = lead.get("overall_score", "N/A")
+    if isinstance(score, (int, float)) and score > 10:
+        score = round(score / 10, 1)
+
+    message = (
+        f"\U0001f4e8 Manual LinkedIn Action Required\n"
+        f"Lead: {first_name} {last_name} — {company}\n"
+        f"Title: {title}\n"
+        f"Score: {score}/10\n\n"
+        f"Message to send:\n"
+        f'"{linkedin_message}"\n\n'
+        f"View lead: {lead_url}"
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(webhook_url, json={"text": message})
+        response.raise_for_status()
+        return True
+    except Exception as exc:
+        _logger.error("LinkedIn action required Slack alert failed: %s", exc)
+        return False
+
+
 async def send_alert(message: str) -> bool:
     webhook_url = os.getenv("SLACK_WEBHOOK_URL", "")
     if not webhook_url:

@@ -149,15 +149,24 @@ async def create_call_note(token: str, contact_id: str, note_body: str) -> str:
     return response.json()["id"]
 
 
-async def create_task(token: str, contact_id: str, recommended_action: str) -> str:
-    due_ms = int((time.time() + 3 * 86400) * 1000)
+async def create_task(
+    token: str,
+    contact_id: str,
+    subject: str,
+    body: str = "",
+    due_date_ms: int | None = None,
+) -> str:
+    due_ms = due_date_ms if due_date_ms is not None else int((time.time() + 3 * 86400) * 1000)
+    properties: dict = {
+        "hs_task_subject": subject,
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_type": "TODO",
+        "hs_timestamp": str(due_ms),
+    }
+    if body:
+        properties["hs_task_body"] = body
     payload = {
-        "properties": {
-            "hs_task_subject": recommended_action,
-            "hs_task_status": "NOT_STARTED",
-            "hs_task_type": "TODO",
-            "hs_timestamp": str(due_ms),
-        },
+        "properties": properties,
         "associations": [
             {
                 "to": {"id": contact_id},
