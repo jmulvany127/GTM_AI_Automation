@@ -14,8 +14,7 @@ from app.models.outreach import OutreachMessage
 from app.models.metrics import AutomationMetrics
 from app.models.outreach_execution_log import OutreachExecutionLog
 from app.schemas.analysis import LeadAnalysisCreate
-from app.schemas.outreach import OutreachCreate
-from app.services import ai_service, outreach_service, hubspot_service, gmail_service, slack_service
+from app.services import ai_service, hubspot_service, gmail_service, slack_service
 from app.services.outreach_agent_service import run_outreach_agent
 from app.config import get_settings
 from app.agents import gtm_workflow_agent
@@ -34,22 +33,6 @@ async def execute_analyze_lead(lead, db: AsyncSession) -> dict:
     lead.status = "analyzed"
     await db.flush()
     return analysis_dict
-
-
-async def execute_generate_outreach(lead, db: AsyncSession) -> dict:
-    analysis_result = await db.execute(
-        select(LeadAnalysis)
-        .where(LeadAnalysis.lead_id == lead.id)
-        .order_by(LeadAnalysis.created_at.desc())
-        .limit(1)
-    )
-    analysis = analysis_result.scalar_one_or_none()
-    outreach_dict = await outreach_service.generate_outreach(lead, analysis)
-    create_data = OutreachCreate(**outreach_dict).model_dump()
-    outreach = OutreachMessage(**create_data, lead_id=lead.id)
-    db.add(outreach)
-    await db.flush()
-    return outreach_dict
 
 
 async def execute_sync_hubspot(lead, db: AsyncSession) -> dict:
@@ -209,7 +192,7 @@ async def execute_run_outreach_agent(lead, analysis_obj, outreach_obj, db: Async
 
 _DISPATCH = {
     "analyze_lead": execute_analyze_lead,
-    "generate_outreach": execute_generate_outreach,
+    "run_outreach_agent": execute_run_outreach_agent,
     "sync_hubspot": execute_sync_hubspot,
     "create_hubspot_task": execute_create_hubspot_task,
     "mark_needs_review": execute_mark_needs_review,
@@ -259,30 +242,6 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
             _logger.error("Executor %s failed: %s", action, exc)
             results[action] = {"status": "error", "detail": str(exc)}
             continue
-
-        if action == "generate_outreach":
-            try:
-                analysis_row = await db.execute(
-                    select(LeadAnalysis)
-                    .where(LeadAnalysis.lead_id == lead.id)
-                    .order_by(LeadAnalysis.created_at.desc())
-                    .limit(1)
-                )
-                analysis_obj = analysis_row.scalar_one_or_none()
-
-                outreach_row = await db.execute(
-                    select(OutreachMessage)
-                    .where(OutreachMessage.lead_id == lead.id)
-                    .order_by(OutreachMessage.created_at.desc())
-                    .limit(1)
-                )
-                outreach_obj = outreach_row.scalar_one_or_none()
-
-                _, agent_result = await execute_run_outreach_agent(lead, analysis_obj, outreach_obj, db)
-                results["outreach_agent"] = agent_result
-            except Exception as exc:
-                _logger.error("Outreach agent handoff failed: %s", exc)
-                results["outreach_agent"] = {"status": "error", "detail": str(exc)}
 
     automated_time_seconds = time.time() - start_time
     manual_time_estimate_minutes = 25
