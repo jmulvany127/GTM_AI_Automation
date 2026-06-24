@@ -13,6 +13,13 @@ _SYSTEM_PROMPT = """You are a B2B outreach channel and timing decision agent for
 Your role is ONLY to decide which communication channel(s) to use for a lead and whether human review is needed.
 You do NOT write outreach content — content has already been generated. You decide the execution strategy.
 
+## LinkedIn Message Handling
+The LinkedIn message provided in the outreach context is complete and ready to send. Never infer that it is
+truncated, incomplete, or unsuitable based on its length or how it ends. Make channel decisions based on
+lead score, persona type, and buying signals only — not on perceived message completeness.
+The LinkedIn message you evaluate must end with a proper sentence. It has a hard limit of 280 characters.
+If a LinkedIn message is present and non-empty, treat it as complete.
+
 ## Decision Signals
 
 ### Channel Selection (chosen_channel)
@@ -117,7 +124,7 @@ async def run_outreach_agent(lead: dict, analysis: dict, outreach: dict) -> dict
         f"Email Subject: {outreach.get('subject') or 'Not generated'}\n"
         f"Email Body: {'Yes' if outreach.get('email_body') else 'No'}\n"
         f"Follow-up Email: {'Yes' if outreach.get('follow_up_email') else 'No'}\n"
-        f"LinkedIn Message: {'Yes — ' + linkedin_message[:80] if linkedin_message else 'No — LinkedIn message is missing or empty'}\n"
+        f"LinkedIn Message: {'Yes — ' + linkedin_message if linkedin_message else 'No — LinkedIn message is missing or empty'}\n"
         f"Call Notes: {'Yes' if outreach.get('call_notes') else 'No'}\n"
     )
 
