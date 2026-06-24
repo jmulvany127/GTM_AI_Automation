@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import time
@@ -14,7 +15,7 @@ from app.models.metrics import AutomationMetrics
 from app.models.outreach_execution_log import OutreachExecutionLog
 from app.schemas.analysis import LeadAnalysisCreate
 from app.schemas.outreach import OutreachCreate
-from app.services import ai_service, outreach_service, hubspot_service
+from app.services import ai_service, outreach_service, hubspot_service, gmail_service, slack_service
 from app.services.outreach_agent_service import run_outreach_agent
 from app.config import get_settings
 from app.agents import gtm_workflow_agent
@@ -121,6 +122,91 @@ async def execute_skip_outreach(lead, db: AsyncSession) -> dict:
     return {"status": "skipped"}
 
 
+async def execute_run_outreach_agent(lead, analysis_obj, outreach_obj, db: AsyncSession) -> tuple:
+    """Full outreach pipeline: LLM channel decision → log → send email/Slack → update status.
+
+    Uses db.flush() so callers control the transaction boundary.
+    Returns (OutreachExecutionLog, agent_result_dict).
+    """
+    lead_dict = {
+        k: getattr(lead, k)
+        for k in ["id", "first_name", "last_name", "email", "company", "job_title", "source", "status", "company_website"]
+    }
+    analysis_dict = (
+        {k: getattr(analysis_obj, k) for k in ["id", "persona_type", "pain_points", "buying_signals", "overall_score", "confidence_score", "recommended_action"]}
+        if analysis_obj else {}
+    )
+    outreach_dict = (
+        {k: getattr(outreach_obj, k) for k in ["id", "subject", "email_body", "linkedin_message", "follow_up_email"]}
+        if outreach_obj else {}
+    )
+
+    agent_result = await run_outreach_agent(lead_dict, analysis_dict, outreach_dict)
+
+    log = OutreachExecutionLog(
+        lead_id=lead.id,
+        outreach_message_id=outreach_obj.id if outreach_obj else None,
+        agent_reasoning=agent_result.get("agent_reasoning"),
+        chosen_channel=agent_result.get("chosen_channel"),
+        requires_human_review=agent_result.get("requires_human_review", False),
+        review_reason=agent_result.get("review_reason"),
+        execution_status="pending",
+    )
+    db.add(log)
+    await db.flush()
+
+    chosen_channel = log.chosen_channel or ""
+    overall_score = analysis_dict.get("overall_score") or 0
+
+    if log.requires_human_review:
+        lead.status = "needs_review"
+        review_alert = slack_service.build_review_alert(
+            first_name=lead_dict["first_name"],
+            last_name=lead_dict["last_name"],
+            company=lead_dict.get("company") or "",
+            overall_score=overall_score,
+            review_reason=log.review_reason,
+            lead_id=lead.id,
+        )
+        await slack_service.send_alert(review_alert)
+    else:
+        new_status = "pending"
+
+        if chosen_channel in ("email", "both"):
+            sent = await asyncio.to_thread(
+                gmail_service.send_email,
+                lead_dict["email"],
+                outreach_dict.get("subject") or "",
+                outreach_dict.get("email_body") or "",
+            )
+            new_status = "sent" if sent else "failed"
+
+        if chosen_channel in ("linkedin", "both"):
+            _logger.info(
+                "LinkedIn sending not yet automated for lead %s — manual action required",
+                lead.id,
+            )
+            if new_status == "pending":
+                new_status = "linkedin_pending"
+
+        log.execution_status = new_status
+        await db.flush()
+
+        if overall_score >= 70:
+            lead_alert = slack_service.build_lead_alert(
+                first_name=lead_dict["first_name"],
+                last_name=lead_dict["last_name"],
+                company=lead_dict.get("company") or "",
+                overall_score=overall_score,
+                chosen_channel=chosen_channel,
+                recommended_action=analysis_dict.get("recommended_action") or "",
+                lead_id=lead.id,
+            )
+            await slack_service.send_alert(lead_alert)
+
+    return log, agent_result
+
+
 _DISPATCH = {
     "analyze_lead": execute_analyze_lead,
     "generate_outreach": execute_generate_outreach,
@@ -192,27 +278,7 @@ async def run_agent_endpoint(lead_id: int, db: AsyncSession = Depends(get_db)):
                 )
                 outreach_obj = outreach_row.scalar_one_or_none()
 
-                lead_dict = {k: getattr(lead, k) for k in ["id", "first_name", "last_name", "email", "company", "job_title", "source", "status", "company_website"]}
-                analysis_dict = {k: getattr(analysis_obj, k) for k in ["id", "persona_type", "pain_points", "buying_signals", "overall_score", "confidence_score", "recommended_action"]} if analysis_obj else {}
-                outreach_dict = {k: getattr(outreach_obj, k) for k in ["id", "subject", "email_body", "linkedin_message", "follow_up_email"]} if outreach_obj else {}
-
-                agent_result = await run_outreach_agent(lead_dict, analysis_dict, outreach_dict)
-
-                log = OutreachExecutionLog(
-                    lead_id=lead.id,
-                    outreach_message_id=outreach_obj.id if outreach_obj else None,
-                    agent_reasoning=agent_result.get("agent_reasoning"),
-                    chosen_channel=agent_result.get("chosen_channel"),
-                    requires_human_review=agent_result.get("requires_human_review", False),
-                    review_reason=agent_result.get("review_reason"),
-                    execution_status="completed",
-                )
-                db.add(log)
-                await db.flush()
-
-                if agent_result.get("requires_human_review"):
-                    lead.status = "needs_review"
-
+                _, agent_result = await execute_run_outreach_agent(lead, analysis_obj, outreach_obj, db)
                 results["outreach_agent"] = agent_result
             except Exception as exc:
                 _logger.error("Outreach agent handoff failed: %s", exc)

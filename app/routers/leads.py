@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,8 +11,7 @@ from app.models.analysis import LeadAnalysis
 from app.models.outreach import OutreachMessage
 from app.models.outreach_execution_log import OutreachExecutionLog
 from app.schemas.lead import LeadCreate, LeadRead, LeadUpdate
-from app.services.outreach_agent_service import run_outreach_agent
-from app.services import gmail_service, slack_service
+from app.routers.workflow import execute_run_outreach_agent
 
 _logger = logging.getLogger(__name__)
 
@@ -120,91 +118,9 @@ async def run_outreach_agent_endpoint(lead_id: int, db: AsyncSession = Depends(g
     if outreach is None:
         raise HTTPException(status_code=404, detail="No outreach message found for this lead")
 
-    # Build dicts from ORM objects
-    lead_dict = {
-        k: getattr(lead, k)
-        for k in ["id", "first_name", "last_name", "email", "company", "job_title", "source", "status", "company_website"]
-    }
-    analysis_dict = {
-        k: getattr(analysis, k)
-        for k in ["id", "persona_type", "pain_points", "buying_signals", "overall_score", "confidence_score", "recommended_action"]
-    }
-    outreach_dict = {
-        k: getattr(outreach, k)
-        for k in ["id", "subject", "email_body", "linkedin_message", "follow_up_email"]
-    }
-
-    # Call the outreach agent
-    agent_result = await run_outreach_agent(lead_dict, analysis_dict, outreach_dict)
-
-    # Save OutreachExecutionLog
-    log = OutreachExecutionLog(
-        lead_id=lead_id,
-        outreach_message_id=outreach.id,
-        chosen_channel=agent_result.get("chosen_channel"),
-        agent_reasoning=agent_result.get("agent_reasoning"),
-        requires_human_review=agent_result.get("requires_human_review", False),
-        review_reason=agent_result.get("review_reason"),
-        execution_status="pending",
-    )
-    db.add(log)
+    log, _ = await execute_run_outreach_agent(lead, analysis, outreach, db)
     await db.commit()
     await db.refresh(log)
-
-    # Update lead status if human review required
-    if log.requires_human_review:
-        lead.status = "needs_review"
-        await db.commit()
-
-    # --- Sending and alerting ---
-    chosen_channel = log.chosen_channel or ""
-    overall_score = analysis_dict.get("overall_score") or 0
-
-    if log.requires_human_review:
-        review_alert = slack_service.build_review_alert(
-            first_name=lead_dict["first_name"],
-            last_name=lead_dict["last_name"],
-            company=lead_dict.get("company") or "",
-            overall_score=overall_score,
-            review_reason=log.review_reason,
-            lead_id=lead_id,
-        )
-        await slack_service.send_alert(review_alert)
-    else:
-        new_status = "pending"
-
-        if chosen_channel in ("email", "both"):
-            sent = await asyncio.to_thread(
-                gmail_service.send_email,
-                lead_dict["email"],
-                outreach_dict.get("subject") or "",
-                outreach_dict.get("email_body") or "",
-            )
-            new_status = "sent" if sent else "failed"
-
-        if chosen_channel in ("linkedin", "both"):
-            _logger.info(
-                "LinkedIn sending not yet automated for lead %s — manual action required",
-                lead_id,
-            )
-            if new_status == "pending":
-                new_status = "linkedin_pending"
-
-        log.execution_status = new_status
-        await db.commit()
-
-        # Slack alert for high-scoring leads (threshold 70 = 7.0/10)
-        if overall_score >= 70:
-            lead_alert = slack_service.build_lead_alert(
-                first_name=lead_dict["first_name"],
-                last_name=lead_dict["last_name"],
-                company=lead_dict.get("company") or "",
-                overall_score=overall_score,
-                chosen_channel=chosen_channel,
-                recommended_action=analysis_dict.get("recommended_action") or "",
-                lead_id=lead_id,
-            )
-            await slack_service.send_alert(lead_alert)
 
     return {
         "id": log.id,
