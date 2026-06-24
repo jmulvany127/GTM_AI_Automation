@@ -390,12 +390,13 @@ tbody td {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  align-items: center;
-  margin-bottom: 1.25rem;
-  background: #fff;
+  align-items: flex-end;
+  margin-bottom: 0.5rem;
+  background: #f7fafc;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.07);
   padding: 0.85rem 1rem;
+  border: 1px solid #e2e8f0;
 }
 
 .filter-bar input[type="text"],
@@ -419,6 +420,48 @@ tbody td {
 .filter-bar input:focus,
 .filter-bar select:focus {
   border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+.filter-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.filter-bar-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.filter-results {
+  font-size: 0.8rem;
+  color: #a0aec0;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 600px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-bar input[type="text"],
+  .filter-bar select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .filter-date-group {
+    width: 100%;
+  }
+
+  .filter-date-group input[type="date"] {
+    width: 100%;
+  }
 }
 
 /* ── Intent score badges ─────────────────────────────────────────────── */
