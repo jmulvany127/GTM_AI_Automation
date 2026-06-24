@@ -511,7 +511,9 @@ http://localhost:8000/docs
 
 ## Seed Data
 
-The seed script populates the database with 20 realistic B2B leads from the residential housing and property management sector, runs the full GTM pipeline (analysis, outreach generation, and agent workflow) on each new lead, and submits 6 realistic sales call transcripts for AI analysis. The script is idempotent — leads are matched by email address, so running it multiple times is safe and duplicate leads are skipped automatically.
+The seed script inserts 20 realistic B2B leads from the property management and multifamily housing sector. It is idempotent — leads are matched by email address, so running it multiple times is safe and duplicate leads are skipped automatically.
+
+After seeding, leads can be processed individually via the dashboard or in bulk by calling the API directly (e.g. `POST /leads/{id}/run-agent`).
 
 **Prerequisites:** The application must be running before executing the seed script.
 
@@ -525,11 +527,21 @@ docker compose up --build
 docker compose exec api python scripts/seed.py
 ```
 
-**Reset all seeded data** (requires typing `yes` to confirm):
+---
+
+## Resetting the Database
+
+To fully wipe and recreate the database — recommended before a demo to start from a clean state:
 
 ```bash
-docker compose exec api python scripts/reset_db.py
+docker compose down -v
+docker compose up -d
+docker compose exec web alembic upgrade head
 ```
+
+- `docker compose down -v` — stops all containers and deletes all volumes, permanently removing the database
+- `docker compose up -d` — recreates and starts all containers in the background
+- `docker compose exec web alembic upgrade head` — runs all migrations to bring the schema up to date
 
 ---
 
