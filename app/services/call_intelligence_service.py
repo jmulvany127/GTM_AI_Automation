@@ -2,24 +2,54 @@ import json
 import logging
 import re
 from anthropic import AsyncAnthropic
-from app.config import get_settings, USER_FULL_NAME, USER_EMAIL
+from app.config import (
+    get_settings,
+    USER_FULL_NAME,
+    USER_EMAIL,
+    COMPANY_NAME,
+    COMPANY_LOCATION,
+    COMPANY_DESCRIPTION,
+    PRODUCT_DESCRIPTION,
+    VALUE_PROPOSITION,
+    TARGET_CUSTOMER,
+    KEY_INTEGRATIONS,
+    KEY_PAIN_POINTS_WE_SOLVE,
+    SENDER_TITLE,
+)
 
 _logger = logging.getLogger(__name__)
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
 
-_SYSTEM_PROMPT = (
-    "you are an expert sales intelligence analyst. Read the call transcript and extract "
-    "structured intelligence. Return ONLY valid JSON with these exact keys: title "
-    "(concise call name, max 60 chars, e.g. \"Discovery call with Sarah Chen — Greystar\"), "
-    "description (1-2 sentences summarising call context), pain_points, "
-    "objections, competitors, budget_signals, decision_timeline, buying_intent_score "
-    "(float 0.0-10.0), recommended_follow_up, crm_note, follow_up_email. Be concise. "
-    "If a field has no evidence in the transcript return null. "
-    f"The sender's name is {USER_FULL_NAME} and their email is {USER_EMAIL}. "
-    "Use this name in follow_up_email sign-offs and anywhere a sender name appears. "
-    "Never output bracketed placeholders such as [Your Name], [Name], [Sender], "
-    "[your name], or any similar bracketed text — always use the real name provided."
-)
+_SYSTEM_PROMPT = f"""You are the call intelligence analyst for {COMPANY_NAME}, {COMPANY_LOCATION}.
+
+ABOUT THE COMPANY:
+{COMPANY_DESCRIPTION}
+
+PRODUCT:
+{PRODUCT_DESCRIPTION}
+
+VALUE PROPOSITION:
+{VALUE_PROPOSITION}
+
+IDEAL CUSTOMER PROFILE:
+{TARGET_CUSTOMER}
+
+KEY INTEGRATIONS:
+{KEY_INTEGRATIONS}
+
+PAIN POINTS WE SOLVE:
+{KEY_PAIN_POINTS_WE_SOLVE}
+
+Read the call transcript and extract structured intelligence for the {COMPANY_NAME} GTM team.
+
+EXTRACTION GUIDELINES:
+- Pain points extracted from transcripts should be mapped against {COMPANY_NAME}'s known pain points where relevant. Clearly note when a prospect's pain maps to something {COMPANY_NAME} directly solves.
+- When the prospect mentions a specific PMS (Yardi, RealPage, Entrata), recommended follow-up actions should reference {COMPANY_NAME}'s native integration with that system. For example, if the prospect mentions Yardi frustration, the recommended follow-up should reference {COMPANY_NAME}'s native Yardi integration.
+- The follow-up email must be written by a {COMPANY_NAME} GTM Engineer and reference the specific pain points raised on the call. Sign off as: {USER_FULL_NAME} | {SENDER_TITLE} | {COMPANY_NAME}.
+- The crm_note must include a footer on a new line: "Analysed by {COMPANY_NAME} GTM OS".
+- Never output bracketed placeholders such as [Your Name], [Company Name], [Sender] — always use real values.
+
+Return ONLY valid JSON with these exact keys: title (concise call name, max 60 chars, e.g. "Discovery call with Sarah Chen — Greystar"), description (1-2 sentences summarising call context), pain_points, objections, competitors, budget_signals, decision_timeline, buying_intent_score (float 0.0-10.0), recommended_follow_up, crm_note, follow_up_email. Be concise. If a field has no evidence in the transcript return null."""
 
 _FALLBACK: dict = {
     "title": None,
