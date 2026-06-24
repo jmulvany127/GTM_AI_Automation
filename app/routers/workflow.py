@@ -122,7 +122,7 @@ async def execute_run_outreach_agent(lead, db: AsyncSession) -> dict:
 
     lead_dict = {
         k: getattr(lead, k)
-        for k in ["id", "first_name", "last_name", "email", "company", "job_title", "source", "status", "company_website"]
+        for k in ["id", "first_name", "last_name", "email", "company", "job_title", "source", "status", "company_website", "notes"]
     }
     analysis_dict = (
         {k: getattr(analysis_obj, k) for k in ["id", "persona_type", "pain_points", "buying_signals", "overall_score", "confidence_score", "recommended_action"]}

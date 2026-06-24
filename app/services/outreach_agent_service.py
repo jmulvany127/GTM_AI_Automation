@@ -12,7 +12,6 @@ from app.config import (
     TARGET_CUSTOMER,
     KEY_PAIN_POINTS_WE_SOLVE,
     USER_FULL_NAME,
-    USER_EMAIL,
     SENDER_TITLE,
 )
 
