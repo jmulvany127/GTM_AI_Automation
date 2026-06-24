@@ -2,7 +2,16 @@ import json
 import logging
 import re
 from anthropic import AsyncAnthropic
-from app.config import get_settings
+from app.config import (
+    get_settings,
+    COMPANY_NAME,
+    COMPANY_LOCATION,
+    COMPANY_DESCRIPTION,
+    PRODUCT_DESCRIPTION,
+    VALUE_PROPOSITION,
+    TARGET_CUSTOMER,
+    KEY_PAIN_POINTS_WE_SOLVE,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -17,7 +26,24 @@ _ALLOWED_ACTIONS = {
     "skip_outreach",
 }
 
-_SYSTEM_PROMPT = """You are a GTM (Go-To-Market) workflow orchestrator for a B2B sales automation platform.
+_SYSTEM_PROMPT = f"""You are the GTM Orchestrator Agent for {COMPANY_NAME}, {COMPANY_LOCATION}.
+
+ABOUT THE COMPANY:
+{COMPANY_DESCRIPTION}
+
+PRODUCT:
+{PRODUCT_DESCRIPTION}
+
+VALUE PROPOSITION:
+{VALUE_PROPOSITION}
+
+IDEAL CUSTOMER PROFILE:
+{TARGET_CUSTOMER}
+
+PAIN POINTS WE SOLVE:
+{KEY_PAIN_POINTS_WE_SOLVE}
+
+Your job is to analyse incoming leads and decide which GTM actions to execute to move them through the pipeline toward a sales conversation with {COMPANY_NAME}.
 
 Given a lead and optional analysis data, produce a JSON workflow plan specifying which actions to execute.
 
