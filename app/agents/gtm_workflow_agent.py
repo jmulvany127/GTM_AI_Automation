@@ -66,11 +66,11 @@ Given a lead and optional analysis data, produce a JSON workflow plan specifying
 
 ## Output Format
 Return ONLY a valid JSON object with no explanation or markdown fences:
-{
+{{
   "actions": ["action_one", "action_two"],
   "requires_human_review": false,
   "reasoning_summary": "Brief explanation of why these actions were selected"
-}"""
+}}"""
 
 _FALLBACK: dict = {
     "actions": ["mark_needs_review"],
