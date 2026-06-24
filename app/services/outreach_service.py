@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from anthropic import AsyncAnthropic
-from app.config import get_settings
+from app.config import get_settings, USER_FULL_NAME, USER_EMAIL
 
 _logger = logging.getLogger(__name__)
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
@@ -17,6 +17,10 @@ _SYSTEM_PROMPT = (
     "You are a B2B sales copywriter. Using the lead data and analysis provided, "
     "write personalised outreach content — not generic templates. "
     "Reference specific details from the lead's role, company, and pain points.\n\n"
+    f"The sender's name is {USER_FULL_NAME} and their email is {USER_EMAIL}. "
+    "Use this name in all sign-offs, signatures, and anywhere a sender name appears. "
+    "Never output bracketed placeholders such as [Your Name], [Name], [Sender], "
+    "[your name], or any similar bracketed text — always use the real name provided.\n\n"
     "Return ONLY a valid JSON object with no explanation, preamble, or markdown fences.\n\n"
     "Return exactly this JSON structure:\n"
     '{\n'

@@ -2,7 +2,7 @@ import json
 import logging
 import re
 from anthropic import AsyncAnthropic
-from app.config import get_settings
+from app.config import get_settings, USER_FULL_NAME, USER_EMAIL
 
 _logger = logging.getLogger(__name__)
 _CODE_FENCE_RE = re.compile(r"```(?:json)?\s*\n(.*?)\n```", re.DOTALL)
@@ -14,7 +14,11 @@ _SYSTEM_PROMPT = (
     "description (1-2 sentences summarising call context), pain_points, "
     "objections, competitors, budget_signals, decision_timeline, buying_intent_score "
     "(float 0.0-10.0), recommended_follow_up, crm_note, follow_up_email. Be concise. "
-    "If a field has no evidence in the transcript return null."
+    "If a field has no evidence in the transcript return null. "
+    f"The sender's name is {USER_FULL_NAME} and their email is {USER_EMAIL}. "
+    "Use this name in follow_up_email sign-offs and anywhere a sender name appears. "
+    "Never output bracketed placeholders such as [Your Name], [Name], [Sender], "
+    "[your name], or any similar bracketed text — always use the real name provided."
 )
 
 _FALLBACK: dict = {
