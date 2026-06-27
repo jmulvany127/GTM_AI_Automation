@@ -1,0 +1,17 @@
+- clean up UI
+- clean up pipeline for agents
+    -ensure no double clikcs
+    -ensure agents queue 
+    - decide whether or not agent automatically send messages
+    - make it so that un analysed leads are seperate to anlaysed leads 
+    -slash make it so that when leadas are anlaysed the move down
+    - research how a user would acc use this tool 
+
+- make tasks add to hubspot 
+
+- add auth 
+-add sendgrid 
+- add demo throttles
+- deploy 
+
+- make RAG over websites
